@@ -1,0 +1,107 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "stock_manager/dashboard" %>
+<% end %>
+
+<p class="page-eyebrow">Inventory Overview</p>
+<h1 class="page-title">Stock Manager Dashboard</h1>
+<p class="page-sub">Monitor stock levels and manage inventory.</p>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+    </div>
+    <span class="stat-value"><%= @total_products %></span>
+    <span class="stat-label">Total Products</span>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="color:#e67e22;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+    </div>
+    <span class="stat-value" style="color:#e67e22;"><%= @low_stock %></span>
+    <span class="stat-label">Low Stock (< 10)</span>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="color:#e74c3c;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <span class="stat-value" style="color:#e74c3c;"><%= @out_of_stock %></span>
+    <span class="stat-label">Out of Stock</span>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    </div>
+    <span class="stat-value"><%= Purchase.count %></span>
+    <span class="stat-label">Total Purchases</span>
+  </div>
+</div>
+
+<!-- Recent Purchases -->
+<div class="panel-card">
+  <div class="panel-card-head">
+    <h3>Recent Purchases</h3>
+    <%= link_to "View all →", stock_manager_purchases_path, class: "view-all" %>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Purchase ID</th>
+        <th>Product</th>
+        <th>Supplier</th>
+        <th>Quantity</th>
+        <th>Total</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @recent_purchases.each do |purchase| %>
+        <tr>
+          <td>#<%= purchase.id %></td>
+          <td><%= purchase.product&.name || 'N/A' %></td>
+          <td><%= purchase.supplier&.name || 'N/A' %></td>
+          <td><%= purchase.quantity %></td>
+          <td>$<%= purchase.total_price %></td>
+          <td><%= purchase.created_at.strftime("%b %d, %Y") %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Low Stock Products -->
+<div class="panel-card" style="margin-top: 24px;">
+  <div class="panel-card-head">
+    <h3>Low Stock Products</h3>
+    <%= link_to "View all →", stock_manager_products_path, class: "view-all" %>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Category</th>
+        <th>Quantity</th>
+        <th>Price</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% Product.where("quantity < 10").order(:quantity).limit(5).each do |product| %>
+        <tr>
+          <td><%= product.name %></td>
+          <td><%= product.category&.name || 'N/A' %></td>
+          <td><%= product.quantity %></td>
+          <td>$<%= product.current_price %></td>
+          <td>
+            <span class="status-pill <%= product.quantity == 0 ? 'out' : 'low' %>">
+              <%= product.quantity == 0 ? 'Out of Stock' : 'Low Stock' %>
+            </span>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

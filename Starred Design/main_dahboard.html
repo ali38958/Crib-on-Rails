@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crib — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal: #14161c;
+    --charcoal-2: #1c1f28;
+    --paper: #f6f3ec;
+    --paper-2: #efe9dc;
+    --ink: #1b1d24;
+    --muted: #8b8d97;
+    --muted-2: #6f7280;
+    --brass: #c79a56;
+    --brass-bright: #e6c281;
+    --brass-dim: #8c703f;
+    --line: rgba(199,154,86,0.22);
+    --line-light: rgba(27,29,36,0.08);
+    --radius: 12px;
+    --header-h: 72px;
+    --sidebar-w: 236px;
+    --sidebar-w-collapsed: 76px;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family:'Manrope', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ================= HEADER ================= */
+  .header{
+    height:var(--header-h);
+    background:var(--charcoal);
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 24px;
+    position:sticky;
+    top:0;
+    z-index:60;
+  }
+
+  .header-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+
+  .menu-btn{
+    display:none;
+    width:36px; height:36px;
+    align-items:center; justify-content:center;
+    background:none; border:none; cursor:pointer;
+    color:var(--paper);
+    border-radius:8px;
+  }
+  .menu-btn:hover{ background:rgba(255,255,255,0.06); }
+  .menu-btn svg{ width:20px; height:20px; }
+
+  .logo-mark{
+    width:36px; height:36px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(circle at 35% 30%, rgba(230,194,129,0.18), transparent 55%),
+      linear-gradient(160deg, #1e212b, #14161c 70%);
+    border:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .logo-mark svg{ width:18px; height:18px; }
+
+  .logo-text{
+    display:flex;
+    flex-direction:column;
+    line-height:1;
+  }
+  .logo-text .word{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:1.28rem;
+    color:var(--paper);
+    letter-spacing:0.01em;
+  }
+  .logo-text .tag{
+    font-family:'Space Mono', monospace;
+    font-size:0.55rem;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-top:4px;
+    opacity:0.85;
+  }
+
+  .header-right{
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+
+  .user-chip{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .avatar{
+    width:34px; height:34px;
+    border-radius:50%;
+    background:linear-gradient(160deg, var(--brass-bright), var(--brass-dim));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Mono', monospace;
+    font-size:0.72rem;
+    font-weight:700;
+    color:var(--charcoal);
+    flex-shrink:0;
+  }
+
+  .user-info{
+    display:flex;
+    flex-direction:column;
+    line-height:1.2;
+  }
+  .user-name{
+    font-size:0.85rem;
+    font-weight:600;
+    color:var(--paper);
+  }
+  .user-role{
+    font-size:0.68rem;
+    color:var(--muted);
+    letter-spacing:0.02em;
+  }
+
+  .logout-btn{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:9px 16px;
+    background:none;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    color:var(--paper);
+    font-family:'Manrope', sans-serif;
+    font-size:0.82rem;
+    font-weight:600;
+    cursor:pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+  .logout-btn svg{ width:15px; height:15px; }
+  .logout-btn:hover{
+    border-color:var(--brass);
+    background:rgba(199,154,86,0.1);
+    color:var(--brass-bright);
+  }
+  .logout-btn .logout-label{ display:inline; }
+
+  /* ================= LAYOUT ================= */
+  .body-wrap{
+    display:flex;
+    min-height:calc(100vh - var(--header-h));
+    position:relative;
+  }
+
+  /* ================= SIDEBAR ================= */
+  .sidebar{
+    width:var(--sidebar-w);
+    background:var(--charcoal);
+    border-right:1px solid var(--line);
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    transition: width 0.3s cubic-bezier(.65,0,.35,1);
+    overflow:hidden;
+  }
+  .sidebar.collapsed{ width:var(--sidebar-w-collapsed); }
+
+  .nav-list{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:20px 12px;
+  }
+
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:0;
+    padding:11px 16px;
+    border-radius:var(--radius);
+    color:var(--muted);
+    text-decoration:none;
+    font-size:0.87rem;
+    font-weight:600;
+    white-space:nowrap;
+    transition: background 0.2s ease, color 0.2s ease;
+    position:relative;
+  }
+  .nav-item svg{
+    width:19px; height:19px;
+    flex-shrink:0;
+  }
+  .nav-item:hover{
+    background:rgba(255,255,255,0.05);
+    color:var(--paper);
+  }
+  .nav-item.active{
+    background:rgba(199,154,86,0.12);
+    color:var(--brass-bright);
+  }
+  .nav-item.active::before{
+    content:"";
+    position:absolute;
+    left:-12px;
+    top:50%;
+    transform:translateY(-50%);
+    width:3px;
+    height:20px;
+    background:var(--brass);
+    border-radius:0 3px 3px 0;
+  }
+
+  .nav-label{
+    opacity:1;
+    max-width:160px;
+    margin-left:14px;
+    overflow:hidden;
+    transition: opacity 0.22s ease, max-width 0.3s cubic-bezier(.65,0,.35,1), margin-left 0.3s cubic-bezier(.65,0,.35,1);
+  }
+  .sidebar.collapsed .nav-label{
+    opacity:0;
+    max-width:0;
+    margin-left:0;
+    pointer-events:none;
+  }
+  .sidebar.collapsed .nav-item.active::before{ left:-12px; }
+
+  .sidebar-head{
+    display:flex;
+    justify-content:flex-end;
+    padding:16px 12px 4px;
+  }
+
+  .collapse-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    flex-shrink:0;
+    background:none;
+    border:1px solid var(--line);
+    border-radius:9px;
+    color:var(--muted);
+    cursor:pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+  .collapse-btn:hover{
+    border-color:var(--brass);
+    background:rgba(199,154,86,0.1);
+    color:var(--brass-bright);
+  }
+  .collapse-btn svg{
+    width:16px; height:16px;
+    flex-shrink:0;
+    transition: transform 0.3s ease;
+  }
+  .sidebar.collapsed .sidebar-head{ justify-content:center; }
+  .sidebar.collapsed .collapse-btn svg{ transform:rotate(180deg); }
+
+  .sidebar-backdrop{
+    display:none;
+  }
+
+  /* ================= MAIN ================= */
+  .main{
+    flex:1;
+    padding:36px 44px 60px;
+    min-width:0;
+  }
+
+  .page-eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:0.66rem;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--brass-dim);
+    margin:0 0 10px;
+  }
+
+  .page-title{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:1.9rem;
+    margin:0 0 6px;
+    color:var(--ink);
+  }
+
+  .page-sub{
+    font-size:0.92rem;
+    color:var(--muted-2);
+    margin:0 0 34px;
+  }
+
+  .stat-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:18px;
+    margin-bottom:36px;
+  }
+
+  .stat-card{
+    background:#fbf9f4;
+    border:1px solid var(--line-light);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .stat-icon{
+    width:38px; height:38px;
+    border-radius:10px;
+    background:rgba(199,154,86,0.12);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--brass-dim);
+  }
+  .stat-icon svg{ width:19px; height:19px; }
+
+  .stat-value{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:1.9rem;
+    color:var(--ink);
+    line-height:1;
+  }
+
+  .stat-label{
+    font-size:0.8rem;
+    color:var(--muted-2);
+    font-weight:600;
+  }
+
+  .stat-delta{
+    font-size:0.74rem;
+    font-weight:700;
+    color:#6b8f5a;
+  }
+  .stat-delta.down{ color:#b25c4a; }
+
+  .panel-card{
+    background:#fbf9f4;
+    border:1px solid var(--line-light);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+
+  .panel-card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px 24px;
+    border-bottom:1px solid var(--line-light);
+  }
+  .panel-card-head h3{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:1.15rem;
+    margin:0;
+    color:var(--ink);
+  }
+  .panel-card-head .view-all{
+    font-size:0.8rem;
+    font-weight:700;
+    color:var(--brass-dim);
+    text-decoration:none;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+  }
+  thead th{
+    text-align:left;
+    font-size:0.7rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--muted-2);
+    font-weight:700;
+    padding:12px 24px;
+    background:var(--paper-2);
+  }
+  tbody td{
+    padding:14px 24px;
+    font-size:0.87rem;
+    color:var(--ink);
+    border-top:1px solid var(--line-light);
+  }
+  tbody tr:hover{ background:rgba(199,154,86,0.05); }
+
+  .status-pill{
+    display:inline-block;
+    padding:4px 11px;
+    border-radius:20px;
+    font-size:0.72rem;
+    font-weight:700;
+  }
+  .status-pill.fulfilled{ background:rgba(107,143,90,0.14); color:#5c7d4c; }
+  .status-pill.pending{ background:rgba(199,154,86,0.15); color:var(--brass-dim); }
+  .status-pill.low{ background:rgba(178,92,74,0.14); color:#a8523f; }
+
+  /* ---------------- responsive ---------------- */
+  @media (max-width: 900px){
+    .header{ padding:0 16px; }
+    .menu-btn{ display:flex; }
+    .logo-text .word{ font-size:1.1rem; }
+    .user-info{ display:none; }
+    .logout-btn .logout-label{ display:none; }
+    .logout-btn{ padding:9px 11px; }
+
+    .sidebar{
+      position:fixed;
+      top:var(--header-h);
+      left:0;
+      bottom:0;
+      width:236px;
+      transform:translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index:70;
+    }
+    .sidebar.collapsed{ width:236px; }
+    .sidebar.collapsed .nav-label{ opacity:1; max-width:160px; margin-left:14px; pointer-events:auto; }
+    .sidebar.mobile-open{ transform:translateX(0); }
+
+    .sidebar-backdrop{
+      display:block;
+      position:fixed;
+      inset:var(--header-h) 0 0 0;
+      background:rgba(0,0,0,0.45);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 0.3s ease;
+      z-index:65;
+    }
+    .sidebar-backdrop.visible{ opacity:1; pointer-events:auto; }
+
+    .main{ padding:26px 18px 48px; }
+    .stat-grid{ grid-template-columns:repeat(2, 1fr); gap:12px; }
+    .panel-card{ overflow-x:auto; }
+    table{ min-width:520px; }
+  }
+
+  @media (max-width: 520px){
+    .stat-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="logo-mark">
+      <svg viewBox="0 0 66 66" fill="none">
+        <rect x="16" y="24" width="34" height="24" rx="2" stroke="var(--brass)" stroke-width="2"/>
+        <path d="M16 32H50" stroke="var(--brass)" stroke-width="2"/>
+        <path d="M24 24V19a9 9 0 0 1 18 0v5" stroke="var(--brass)" stroke-width="2"/>
+        <circle cx="33" cy="40" r="1.6" fill="var(--brass)"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <span class="word">Crib</span>
+      <span class="tag">Ruby · on Rails</span>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="user-chip">
+      <div class="avatar">MA</div>
+      <div class="user-info">
+        <span class="user-name">Muhammad Ali</span>
+        <span class="user-role">Warehouse Admin</span>
+      </div>
+    </div>
+    <button class="logout-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span class="logout-label">Logout</span>
+    </button>
+  </div>
+</header>
+
+<div class="body-wrap">
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <button class="collapse-btn" id="collapseBtn" aria-label="Collapse sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+    </div>
+    <nav class="nav-list">
+      <a href="#" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+        <span class="nav-label">Orders</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="nav-label">Users</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        <span class="nav-label">Settings</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <p class="page-eyebrow">Overview</p>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-sub">Here's what's moving through the warehouse today.</p>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+        </div>
+        <span class="stat-value">4,286</span>
+        <span class="stat-label">Total Items</span>
+        <span class="stat-delta">▲ 3.2% this week</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+        </div>
+        <span class="stat-value">37</span>
+        <span class="stat-label">Low Stock Alerts</span>
+        <span class="stat-delta down">▼ 5 resolved</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        </div>
+        <span class="stat-value">128</span>
+        <span class="stat-label">Orders Today</span>
+        <span class="stat-delta">▲ 12 new</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <span class="stat-value">56</span>
+        <span class="stat-label">Active Users</span>
+        <span class="stat-delta">▲ 2 online now</span>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-card-head">
+        <h3>Recent Orders</h3>
+        <a href="#" class="view-all">View all →</a>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>#CR-3021</td>
+            <td>Hamza Traders</td>
+            <td>14</td>
+            <td><span class="status-pill fulfilled">Fulfilled</span></td>
+            <td>Jul 24, 2026</td>
+          </tr>
+          <tr>
+            <td>#CR-3020</td>
+            <td>Askari Supplies</td>
+            <td>6</td>
+            <td><span class="status-pill pending">Pending</span></td>
+            <td>Jul 24, 2026</td>
+          </tr>
+          <tr>
+            <td>#CR-3019</td>
+            <td>Northline Retail</td>
+            <td>22</td>
+            <td><span class="status-pill low">Low Stock</span></td>
+            <td>Jul 23, 2026</td>
+          </tr>
+          <tr>
+            <td>#CR-3018</td>
+            <td>Blue Ridge Co.</td>
+            <td>9</td>
+            <td><span class="status-pill fulfilled">Fulfilled</span></td>
+            <td>Jul 23, 2026</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+</div>
+
+<script>
+  const sidebar = document.getElementById('sidebar');
+  const menuBtn = document.getElementById('menuBtn');
+  const collapseBtn = document.getElementById('collapseBtn');
+  const backdrop = document.getElementById('sidebarBackdrop');
+
+  function isMobile(){ return window.innerWidth <= 900; }
+
+  menuBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('mobile-open');
+    backdrop.classList.toggle('visible');
+  });
+
+  backdrop.addEventListener('click', () => {
+    sidebar.classList.remove('mobile-open');
+    backdrop.classList.remove('visible');
+  });
+
+  collapseBtn.addEventListener('click', () => {
+    if (isMobile()){
+      sidebar.classList.remove('mobile-open');
+      backdrop.classList.remove('visible');
+    } else {
+      sidebar.classList.toggle('collapsed');
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (!isMobile()){
+      sidebar.classList.remove('mobile-open');
+      backdrop.classList.remove('visible');
+    }
+  });
+</script>
+
+</body>
+</html>

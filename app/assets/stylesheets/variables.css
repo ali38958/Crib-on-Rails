@@ -1,0 +1,16 @@
+:root {
+  --charcoal: #14161c;
+  --paper: #f6f3ec;
+  --paper-2: #efe9dc;
+  --ink: #1b1d24;
+  --muted: #8b8d97;
+  --muted-2: #6f7280;
+  --brass: #c79a56;
+  --brass-bright: #e6c281;
+  --brass-dim: #8c703f;
+  --line: rgba(199,154,86,0.22);
+  --radius: 12px;
+  --header-height: 65px;
+  --sidebar-width: 220px;
+  --sidebar-collapsed: 65px;
+}

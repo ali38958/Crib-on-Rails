@@ -1,0 +1,144 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Users</h1>
+    <p class="page-sub">Manage all users in the system</p>
+  </div>
+  <div class="page-actions">
+    <button onclick="openModal('Admin')" class="btn btn-primary">Add Admin</button>
+    <button onclick="openModal('StockManager')" class="btn btn-primary">Add Stock Manager</button>
+    <button onclick="openModal('OrderReceiver')" class="btn btn-primary">Add Order Receiver</button>
+  </div>
+</div>
+
+<!-- Admins -->
+<div class="user-section">
+  <h2 class="section-title">Admins</h2>
+  <table class="user-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @admins.each do |user| %>
+        <tr>
+          <td><%= user.id %></td>
+          <td><%= user.name %></td>
+          <td><%= user.phone %></td>
+          <td><%= user.email %></td>
+          <td>
+            <span class="status-badge <%= user.status %>">
+              <%= user.status.capitalize %>
+            </span>
+          </td>
+          <td>
+            <button onclick="openModal('Admin', '<%= user.id %>')" class="btn-edit">Edit</button>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Stock Managers -->
+<div class="user-section">
+  <h2 class="section-title">Stock Managers</h2>
+  <table class="user-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @stock_managers.each do |user| %>
+        <tr>
+          <td><%= user.id %></td>
+          <td><%= user.name %></td>
+          <td><%= user.phone %></td>
+          <td><%= user.email %></td>
+          <td>
+            <span class="status-badge <%= user.status %>">
+              <%= user.status.capitalize %>
+            </span>
+          </td>
+          <td>
+            <button onclick="openModal('StockManager', '<%= user.id %>')" class="btn-edit">Edit</button>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Order Receivers -->
+<div class="user-section">
+  <h2 class="section-title">Order Receivers</h2>
+  <table class="user-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @order_receivers.each do |user| %>
+        <tr>
+          <td><%= user.id %></td>
+          <td><%= user.name %></td>
+          <td><%= user.phone %></td>
+          <td><%= user.email %></td>
+          <td>
+            <span class="status-badge <%= user.status %>">
+              <%= user.status.capitalize %>
+            </span>
+          </td>
+          <td>
+            <button onclick="openModal('OrderReceiver', '<%= user.id %>')" class="btn-edit">Edit</button>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal Container -->
+<div id="modalContainer"></div>
+
+<script>
+  function openModal(role, id = null) {
+    const container = document.getElementById('modalContainer');
+    
+    container.innerHTML = '';
+    
+    let url = id ? 
+      '/admin/users/' + id + '/edit/' + role : 
+      '/admin/users/new/' + role;
+    
+    fetch(url, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      container.innerHTML = html;
+    })
+    .catch(error => {
+      console.error('Error loading modal:', error);
+    });
+  }
+</script>

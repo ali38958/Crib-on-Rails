@@ -1,0 +1,138 @@
+<%= stylesheet_link_tag "admin/users" %>
+
+<div class="modal-overlay active" id="userModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2><%= action == 'new' ? "Add New #{@role}" : "Edit #{@role}: #{@user.name}" %></h2>
+      <button type="button" class="modal-close" onclick="closeUserModal()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <div id="modalErrors" style="display:none;" class="error-messages">
+        <ul id="errorList"></ul>
+      </div>
+      
+      <%= form_with model: @user, url: action == 'new' ? admin_users_path(role: @role) : admin_user_path(id: @user.id, role: @role), method: action == 'new' ? :post : :patch, class: "user-form", id: "userForm", data: { turbo: false }, scope: :user do |f| %>
+        
+        <div class="form-group">
+          <%= f.label :id %>
+          <%= f.text_field :id, required: true, disabled: action == 'edit' %>
+        </div>
+        
+        <div class="form-group">
+          <%= f.label :name %>
+          <%= f.text_field :name, required: true %>
+        </div>
+        
+        <div class="form-group">
+          <%= f.label :phone %>
+          <%= f.text_field :phone %>
+        </div>
+        
+        <div class="form-group">
+          <%= f.label :email %>
+          <%= f.email_field :email %>
+        </div>
+        
+        <div class="form-group">
+          <%= f.label :password %>
+          <%= f.password_field :password, placeholder: action == 'new' ? 'Required' : 'Leave blank to keep current' %>
+        </div>
+        
+        <div class="form-group">
+          <%= f.label :password_confirmation %>
+          <%= f.password_field :password_confirmation, placeholder: action == 'new' ? 'Required' : 'Leave blank to keep current' %>
+        </div>
+        
+        <% if action == 'edit' && @user.id == current_user.id %>
+          <div class="form-group">
+            <p><strong>Status:</strong> <%= @user.status.capitalize %> (You cannot change your own status)</p>
+            <%= f.hidden_field :status, value: @user.status %>
+          </div>
+        <% else %>
+          <div class="form-group">
+            <%= f.label :status %>
+            <%= f.select :status, [['Active', 'active'], ['Inactive', 'inactive']] %>
+          </div>
+        <% end %>
+        
+        <div class="form-actions">
+          <%= f.submit action == 'new' ? "Create #{@role}" : "Update #{@role}", class: "btn btn-primary", id: "submitBtn" %>
+          <button type="button" class="btn btn-secondary" onclick="closeUserModal()">Cancel</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Close function
+  window.closeUserModal = function() {
+    const modal = document.getElementById('userModal');
+    if (modal) {
+      modal.remove();
+    }
+    document.body.style.overflow = 'auto';
+  };
+  
+  // Close on backdrop click
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'userModal') {
+      closeUserModal();
+    }
+  });
+  
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('userModal');
+      if (modal) {
+        closeUserModal();
+      }
+    }
+  });
+  
+  // AJAX form submit
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('userForm');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+        
+        const formData = new FormData(form);
+        
+        fetch(form.action, {
+          method: form.method,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: formData
+        })
+        .then(response => {
+          if (response.redirected) {
+            window.location.href = response.url;
+            return;
+          }
+          return response.text();
+        })
+        .then(html => {
+          if (html) {
+            const container = document.getElementById('userModal');
+            if (container) {
+              container.outerHTML = html;
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Try Again';
+        });
+      });
+    }
+  });
+</script>

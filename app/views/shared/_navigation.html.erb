@@ -1,0 +1,24 @@
+<nav>
+  <div>
+    <h1>Crib on Rails</h1>
+  </div>
+  
+  <div>
+    <% if cookies[:auth_token] %>
+      <% case session[:role] %>
+      <% when 'Admin' %>
+        <%= link_to "Dashboard", admin_path %>
+        <%= link_to "Users", admin_users_path %>
+      <% when 'StockManager' %>
+        <%= link_to "Dashboard", stock_manager_path %>
+      <% when 'OrderReceiver' %>
+        <%= link_to "Dashboard", order_receiver_path %>
+      <% end %>
+      
+      <span><%= @current_user&.name %></span>
+      <%= link_to "Logout", logout_path, method: :delete, data: { turbo_method: :delete } %>
+    <% else %>
+      <%= link_to "Login", login_path %>
+    <% end %>
+  </div>
+</nav>

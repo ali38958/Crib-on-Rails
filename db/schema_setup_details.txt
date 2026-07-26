@@ -1,0 +1,272 @@
+==============================================
+SCHEMA EXPLANATION FOR RAILS PROJECT
+==============================================
+
+Project: Crib_on_Rails
+Date: July 2026
+Database: SQLite3 (development)
+
+==============================================
+WHAT WE DID (SUMMARY)
+==============================================
+
+1. Generated models with rails commands
+2. Edited migration files for custom fields
+3. Added relationships between models
+4. Ran migrations to create tables
+5. Added PriceChange model for tracking price history
+
+
+==============================================
+THE MODELS (TABLES) WE CREATED
+==============================================
+
+1. Admin (Custom String ID)
+   - id: string (primary key, NOT auto-increment)
+   - name: string
+   - phone: string
+   - email: string
+   - password: string
+
+2. StockManager (Custom String ID)
+   - id: string (primary key)
+   - name: string
+   - phone: string
+   - email: string
+   - password: string
+
+3. OrderReceiver (Custom String ID)
+   - id: string (primary key)
+   - name: string
+   - phone: string
+   - email: string
+   - password: string
+
+4. Supplier (Auto-increment ID)
+   - id: integer (auto-increment)
+   - name: string
+   - phone: string
+   - email: string
+
+5. Customer (Auto-increment ID)
+   - id: integer (auto-increment)
+   - name: string
+   - phone: string
+   - email: string
+   - location: text
+
+6. Category (Auto-increment ID)
+   - id: integer (auto-increment)
+   - name: string
+
+7. Product (Auto-increment ID)
+   - id: integer (auto-increment)
+   - name: string
+   - category_id: integer (foreign key)
+   - quantity: integer (default: 0)
+   - current_price: decimal (default: 0.00)
+   - image_url: string
+
+8. Purchase (Auto-increment ID)
+   - id: integer (auto-increment)
+   - supplier_id: integer (foreign key)
+   - product_id: integer (foreign key)
+   - quantity: integer (default: 0)
+   - total_price: decimal
+
+9. Order (Auto-increment ID)
+   - id: integer (auto-increment)
+   - customer_id: integer (foreign key)
+   - price_paid: decimal
+   - total_price: decimal
+   - status: integer (enum: 0=pending, 1=confirmed, 2=processing, 3=cancelled, 4=shipped, 5=delivered)
+   - created_at: timestamp (auto-set)
+   - updated_at: timestamp (auto-update)
+
+10. OrderItem (Auto-increment ID)
+    - id: integer (auto-increment)
+    - order_id: integer (foreign key)
+    - product_id: integer (foreign key)
+    - price_per_unit: decimal
+    - quantity: integer
+
+11. PriceChange (Auto-increment ID) - ADDED LATER
+    - id: integer (auto-increment)
+    - product_id: integer (foreign key)
+    - old_price: decimal
+    - new_price: decimal
+    - created_at: timestamp
+    - updated_at: timestamp
+
+
+==============================================
+HOW WE CREATED THEM
+==============================================
+
+COMMANDS WE RAN:
+
+# Generate models (creates migration + model file)
+rails generate model Admin name:string phone:string email:string password:string
+rails generate model StockManager name:string phone:string email:string password:string
+rails generate model OrderReceiver name:string phone:string email:string password:string
+rails generate model Supplier name:string phone:string email:string
+rails generate model Customer name:string phone:string email:string location:text
+rails generate model Category name:string
+rails generate model Product name:string category:references quantity:integer current_price:decimal image_url:string
+rails generate model Purchase supplier:references product:references quantity:integer total_price:decimal
+rails generate model Order customer:references price_paid:decimal total_price:decimal status:integer
+rails generate model OrderItem order:references product:references price_per_unit:decimal quantity:integer
+rails generate model PriceChange product:references old_price:decimal new_price:decimal
+
+# Run migrations
+rails db:migrate
+
+# Reset database (drop + create + migrate)
+rails db:reset
+
+
+==============================================
+RELATIONSHIPS BETWEEN TABLES
+==============================================
+
+Product → Category (belongs_to)
+Product ← Category (has_many)
+  - Each product belongs to one category
+  - Each category can have many products
+
+Product → PriceChange (has_many)
+PriceChange → Product (belongs_to)
+  - Each product can have many price changes
+  - Each price change belongs to one product
+
+Product → Purchase (has_many through: product_id)
+Supplier → Purchase (has_many through: supplier_id)
+  - Each product can have many purchases
+  - Each supplier can have many purchases
+  - Each purchase belongs to one product AND one supplier
+
+Product → OrderItem (has_many through: product_id)
+Order → OrderItem (has_many through: order_id)
+  - Each product can appear in many order items
+  - Each order can have many order items
+  - Each order item belongs to one product AND one order
+
+Order → Customer (belongs_to)
+Customer ← Order (has_many)
+  - Each order belongs to one customer
+  - Each customer can have many orders
+
+
+==============================================
+SPECIAL FEATURES WE ADDED
+==============================================
+
+1. Custom String IDs for Admin, StockManager, OrderReceiver
+   - Used 'id: false' in migration
+   - Set 't.string :id, primary_key: true'
+   - Added 'self.primary_key = :id' in model
+
+2. Auto Price Tracking on Product
+   - Added 'has_many :price_changes' in Product
+   - Added 'before_update :track_price_change' in Product
+   - Every price update automatically creates a PriceChange record
+
+3. Status Enum on Order
+   - status: integer with values:
+     0 = pending
+     1 = confirmed
+     2 = processing
+     3 = cancelled
+     4 = shipped
+     5 = delivered
+
+
+==============================================
+HOW TO QUERY DATA (EXAMPLES)
+==============================================
+
+# Find all products
+Product.all
+
+# Find product by ID
+Product.find(1)
+
+# Products with price > 100
+Product.where("current_price > ?", 100)
+
+# Products in category
+Product.joins(:category).where(categories: { name: "Electronics" })
+
+# Product price history
+product = Product.find(1)
+product.price_changes
+product.price_changes.count
+
+# Orders by status
+Order.where(status: :pending)
+Order.pending  # if scope defined
+
+# Orders with customer details
+Order.includes(:customer).where(status: :delivered)
+
+# Most popular products
+OrderItem.joins(:product)
+         .group(:product_id)
+         .order('SUM(quantity) DESC')
+         .limit(5)
+
+
+==============================================
+COMMANDS REFERENCE
+==============================================
+
+# Create database
+rails db:create
+
+# Run migrations
+rails db:migrate
+
+# Undo last migration
+rails db:rollback
+
+# Reset database (drop + create + migrate)
+rails db:reset
+
+# Seed database with sample data
+rails db:seed
+
+# Open console
+rails console
+
+# Generate model
+rails generate model ModelName field:type
+
+# Destroy model
+rails destroy model ModelName
+
+
+==============================================
+WHERE FILES ARE LOCATED
+==============================================
+
+Models: app/models/
+Migrations: db/migrate/
+Seed: db/seeds.rb
+Schema: db/schema.rb
+Database: db/development.sqlite3
+
+
+==============================================
+KEY TAKEAWAYS
+==============================================
+
+1. Rails creates tables from migrations
+2. Models define relationships (has_many, belongs_to)
+3. Foreign keys are added via references in migrations
+4. product.price_changes.count uses WHERE not JOIN
+5. Product must exist (saved) before using price_changes
+6. Price changes are auto-tracked when product price updates
+
+==============================================
+END OF EXPLANATION
+==============================================

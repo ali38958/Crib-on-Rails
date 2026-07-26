@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crib — Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal: #14161c;
+    --paper: #f6f3ec;
+    --paper-2: #efe9dc;
+    --ink: #1b1d24;
+    --muted: #8b8d97;
+    --muted-2: #6f7280;
+    --brass: #c79a56;
+    --brass-bright: #e6c281;
+    --brass-dim: #8c703f;
+    --line: rgba(199,154,86,0.22);
+    --radius: 12px;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family:'Manrope', sans-serif;
+    background:var(--charcoal);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .stage{
+    position:relative;
+    min-height:100vh;
+    display:flex;
+    overflow:hidden;
+  }
+
+  .panel{
+    width:50%;
+    min-height:100vh;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .panel-form{ background:var(--paper); order:1; }
+  .panel-visual{ background:var(--charcoal); order:2; overflow:hidden; }
+
+  /* ================= VISUAL PANEL ================= */
+  .panel-visual{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:64px 56px;
+    color:var(--paper);
+  }
+
+  .visual-noise{
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(circle at 50% 38%, rgba(230,194,129,0.10), transparent 45%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+  }
+
+  .glow{
+    position:absolute;
+    top:50%; left:50%;
+    width:520px; height:520px;
+    transform:translate(-50%,-58%);
+    background:radial-gradient(circle, rgba(230,194,129,0.16) 0%, rgba(230,194,129,0.05) 40%, transparent 70%);
+    animation: breathe 5s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes breathe{
+    0%,100%{ opacity:.65; transform:translate(-50%,-58%) scale(1); }
+    50%{ opacity:1; transform:translate(-50%,-58%) scale(1.08); }
+  }
+
+  .plate-wrap{
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+
+  .plate{
+    width:150px; height:150px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(circle at 35% 30%, rgba(230,194,129,0.14), transparent 55%),
+      linear-gradient(160deg, #1e212b, #14161c 70%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.03),
+      0 0 40px rgba(0,0,0,0.5);
+    margin-bottom:28px;
+  }
+
+  .plate svg{ width:56px; height:56px; }
+
+  .wordmark{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:500;
+    font-size:2.7rem;
+    letter-spacing:0.01em;
+    margin:0;
+    color:var(--paper);
+  }
+
+  .railtag{
+    font-family:'Space Mono', monospace;
+    font-size:0.62rem;
+    letter-spacing:0.28em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-top:10px;
+    opacity:0.85;
+  }
+
+  .plate-rule{
+    width:34px; height:1px;
+    background:var(--line);
+    margin:26px 0 20px;
+  }
+
+  .plate-copy{
+    max-width:320px;
+    font-size:0.93rem;
+    line-height:1.65;
+    color:rgba(246,243,236,0.55);
+    font-weight:400;
+  }
+
+  .addr{
+    margin-top:34px;
+    font-family:'Space Mono', monospace;
+    font-size:0.68rem;
+    letter-spacing:0.14em;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+
+  /* ================= FORM PANEL ================= */
+  .panel-form{
+    padding:64px 56px;
+  }
+
+  .form-inner{
+    width:100%;
+    max-width:360px;
+  }
+
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:0.66rem;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--brass-dim);
+    margin:0 0 14px;
+  }
+
+  h1.title{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:2.05rem;
+    line-height:1.15;
+    margin:0 0 10px;
+    color:var(--ink);
+  }
+
+  .sub{
+    font-size:0.92rem;
+    color:var(--muted-2);
+    line-height:1.55;
+    margin:0 0 36px;
+  }
+
+  .field{
+    margin-bottom:20px;
+  }
+
+  .field label{
+    display:block;
+    font-size:0.72rem;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--muted-2);
+    margin-bottom:8px;
+  }
+
+  .field input{
+    width:100%;
+    padding:13px 16px;
+    font-family:'Manrope', sans-serif;
+    font-size:0.95rem;
+    color:var(--ink);
+    background:var(--paper-2);
+    border:1px solid transparent;
+    border-radius:var(--radius);
+    outline:none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .field input::placeholder{ color:#a8a293; }
+  .field input:focus{
+    border-color:var(--brass);
+    background:#fbf9f4;
+  }
+
+  .row-between{
+    display:flex;
+    align-items:center;
+    margin:-4px 0 28px;
+  }
+
+  .remember{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:0.83rem;
+    color:var(--muted-2);
+  }
+  .remember input{
+    width:14px; height:14px;
+    accent-color:var(--brass-dim);
+  }
+
+  .submit{
+    width:100%;
+    padding:14px;
+    font-family:'Manrope', sans-serif;
+    font-size:0.9rem;
+    font-weight:700;
+    letter-spacing:0.02em;
+    color:var(--paper);
+    background:var(--ink);
+    border:none;
+    border-radius:var(--radius);
+    cursor:pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .submit:hover{ background:#000; }
+  .submit:active{ transform:scale(0.99); }
+
+  /* ---------------- responsive ---------------- */
+  @media (max-width: 900px){
+    .stage{ flex-direction:column; }
+    .panel{ width:100%; min-height:auto; }
+    .panel-visual{ order:1; padding:44px 32px; }
+    .panel-form{ order:2; padding:44px 28px 60px; }
+    .wordmark{ font-size:2.2rem; }
+    .plate{ width:110px; height:110px; margin-bottom:18px; }
+    .plate svg{ width:42px; height:42px; }
+    .plate-copy{ display:none; }
+    .addr{ margin-top:18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- ============ FORM PANEL ============ -->
+  <section class="panel panel-form">
+    <div class="form-inner">
+      <p class="eyebrow">Welcome back</p>
+      <h1 class="title">Sign in to Crib</h1>
+      <p class="sub">Access your inventory dashboard.</p>
+
+      <form onsubmit="event.preventDefault();">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="you@domain.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="••••••••••" autocomplete="current-password">
+        </div>
+
+        <div class="row-between">
+          <label class="remember">
+            <input type="checkbox">
+            Stay signed in
+          </label>
+        </div>
+
+        <button type="submit" class="submit">Sign in</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ VISUAL PANEL ============ -->
+  <section class="panel panel-visual">
+    <div class="visual-noise"></div>
+    <div class="glow"></div>
+    <div class="plate-wrap">
+      <div class="plate">
+        <svg viewBox="0 0 66 66" fill="none">
+          <rect x="16" y="24" width="34" height="24" rx="2" stroke="var(--brass)" stroke-width="2"/>
+          <path d="M16 32H50" stroke="var(--brass)" stroke-width="2"/>
+          <path d="M24 24V19a9 9 0 0 1 18 0v5" stroke="var(--brass)" stroke-width="2"/>
+          <circle cx="33" cy="40" r="1.6" fill="var(--brass)"/>
+        </svg>
+      </div>
+      <h2 class="wordmark">Crib</h2>
+      <p class="railtag">Ruby · on Rails</p>
+      <div class="plate-rule"></div>
+      <p class="plate-copy">Every crate, shelf, and unit — tracked, counted, in its place.</p>
+      <p class="addr">Warehouse Access — Authorized Only</p>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

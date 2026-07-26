@@ -1,0 +1,67 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "admin/dashboard" %>
+<% end %>
+
+<p class="page-eyebrow">Overview</p>
+<h1 class="page-title">Dashboard</h1>
+<p class="page-sub">Here's what's moving through the warehouse today.</p>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+    </div>
+    <span class="stat-value"><%= Product.count %></span>
+    <span class="stat-label">Total Items</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+    </div>
+    <span class="stat-value"><%= Product.where("quantity < 10").count %></span>
+    <span class="stat-label">Low Stock Alerts</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    </div>
+    <span class="stat-value"><%= Order.where("created_at >= ?", Date.today.beginning_of_day).count %></span>
+    <span class="stat-label">Orders Today</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <span class="stat-value"><%= Admin.count + StockManager.count + OrderReceiver.count %></span>
+    <span class="stat-label">Total Users</span>
+  </div>
+</div>
+
+<div class="panel-card">
+  <div class="panel-card-head">
+    <h3>Recent Orders</h3>
+    <%= link_to "View all →", order_receiver_orders_path, class: "view-all" %>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Order</th>
+        <th>Customer</th>
+        <th>Items</th>
+        <th>Status</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% Order.order(created_at: :desc).limit(5).each do |order| %>
+        <tr>
+          <td>#<%= order.id %></td>
+          <td><%= order.customer&.name || 'N/A' %></td>
+          <td><%= order.order_items.sum(:quantity) %></td>
+          <td><span class="status-pill <%= order.status %>"><%= order.status.capitalize %></span></td>
+          <td><%= order.created_at.strftime("%b %d, %Y") %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,49 @@
+<h1 class="page-title">Edit <%= @role %>: <%= @user.name %></h1>
+
+<%= form_with model: @user, url: admin_user_path(id: @user.id, role: @role), method: :patch, class: "user-form" do |f| %>
+  <div class="form-group">
+    <%= f.label :id %>
+    <%= f.text_field :id, disabled: true %>
+  </div>
+  
+  <div class="form-group">
+    <%= f.label :name %>
+    <%= f.text_field :name, required: true %>
+  </div>
+  
+  <div class="form-group">
+    <%= f.label :phone %>
+    <%= f.text_field :phone %>
+  </div>
+  
+  <div class="form-group">
+    <%= f.label :email %>
+    <%= f.email_field :email %>
+  </div>
+  
+  <div class="form-group">
+    <%= f.label :password %>
+    <%= f.password_field :password, placeholder: "Leave blank to keep current" %>
+  </div>
+  
+  <div class="form-group">
+    <%= f.label :password_confirmation %>
+    <%= f.password_field :password_confirmation, placeholder: "Leave blank to keep current" %>
+  </div>
+  
+  <% if @user.id != current_user.id %>
+    <div class="form-group">
+      <%= f.label :status %>
+      <%= f.select :status, [['Active', 'active'], ['Inactive', 'inactive']] %>
+    </div>
+  <% else %>
+    <div class="form-group">
+      <p><strong>Status:</strong> <%= @user.status.capitalize %> (You cannot change your own status)</p>
+    </div>
+  <% end %>
+  
+  <div class="form-actions">
+    <%= f.submit "Update #{@role}", class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_users_path, class: "btn btn-secondary" %>
+  </div>
+<% end %>

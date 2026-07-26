@@ -1,0 +1,80 @@
+<%= stylesheet_link_tag "stock_manager/products" %>
+
+<div class="modal-overlay active" id="productModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2><%= action == 'new' ? "Add New Product" : "Edit Product: #{@product.name}" %></h2>
+      <button type="button" class="modal-close" onclick="window.closeProductModal()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <% if @product && @product.errors.any? %>
+        <div class="error-messages">
+          <ul>
+            <% @product.errors.full_messages.each do |msg| %>
+              <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+      
+      <%= form_with model: @product, url: action == 'new' ? stock_manager_products_path : stock_manager_product_path(@product), method: action == 'new' ? :post : :patch, class: "product-form", id: "productForm", data: { turbo: false }, local: true do |f| %>
+        
+        <div class="form-group">
+          <%= f.label :name %>
+          <%= f.text_field :name, required: true, placeholder: "Enter product name" %>
+        </div>
+        
+        <div class="form-group">
+          <%= f.label :category_id, "Category" %>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <%= f.collection_select :category_id, Category.all, :id, :name, { prompt: "Select Category" }, { style: "flex: 1; padding: 10px 14px; font-family: 'Manrope', sans-serif; font-size: 0.95rem; color: var(--ink); background: var(--paper-2); border: 1px solid transparent; border-radius: var(--radius); outline: none;" } %>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="window.openCategoryModal()">+</button>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <%= f.label :quantity %>
+          <%= f.number_field :quantity, min: 0, required: true %>
+        </div>
+        
+        <div class="form-group">
+          <%= f.label :current_price, "Price" %>
+          <%= f.number_field :current_price, step: 0.01, min: 0, required: true %>
+        </div>
+        
+        <div class="form-group">
+          <%= f.label :image, "Product Image" %>
+          <div class="file-drop-zone" id="fileDropZone">
+            <div class="file-drop-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p>Drag & drop your image here</p>
+              <span>or click to browse</span>
+            </div>
+            <%= f.file_field :image, accept: "image/*", class: "file-input-hidden", id: "productImageInput" %>
+          </div>
+          <div id="imagePreview" style="display:none; margin-top: 12px;">
+            <img id="previewImg" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: var(--radius);">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="removeImage()" style="margin-top: 8px;">Remove</button>
+          </div>
+          <% if action == 'edit' && @product && @product.image.attached? %>
+            <div id="existingImage" style="margin-top: 12px;">
+              <p style="font-size: 0.8rem; color: var(--muted-2);">Current image:</p>
+              <img src="<%= url_for(@product.image) %>" alt="Current" style="max-width: 100%; max-height: 150px; border-radius: var(--radius);">
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="form-actions">
+          <%= f.submit action == 'new' ? "Create Product" : "Update Product", class: "btn btn-primary", id: "submitBtn" %>
+          <button type="button" class="btn btn-secondary" onclick="window.closeProductModal()">Cancel</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+

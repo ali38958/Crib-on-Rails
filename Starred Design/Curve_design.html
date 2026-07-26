@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crib — Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal: #14161c;
+    --paper: #f6f3ec;
+    --paper-2: #efe9dc;
+    --ink: #1b1d24;
+    --muted: #8b8d97;
+    --muted-2: #6f7280;
+    --brass: #c79a56;
+    --brass-bright: #e6c281;
+    --brass-dim: #8c703f;
+    --line: rgba(199,154,86,0.22);
+    --radius: 12px;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family:'Manrope', sans-serif;
+    background-color: var(--charcoal);
+    background-image:
+      radial-gradient(circle at 50% 38%, rgba(230,194,129,0.10), transparent 45%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ================= THE SVG CURVE LAYER (desktop, vertical) ================= */
+  .curve-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ================= MOBILE CURVE (hidden on desktop) ================= */
+  .mobile-curve{ display:none; }
+
+  /* ================= THE GLOW (lives inside panel-visual now, works both layouts) ================= */
+  .glow {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 520px;
+    height: 520px;
+    background: radial-gradient(circle, rgba(230,194,129,0.16) 0%, rgba(230,194,129,0.05) 40%, transparent 70%);
+    animation: breathe 5s ease-in-out infinite;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  @keyframes breathe{
+    0%,100%{ opacity:.65; transform:translate(-50%, -50%) scale(1); }
+    50%{ opacity:1; transform:translate(-50%, -50%) scale(1.08); }
+  }
+
+  /* ================= FORM PANEL (1/4th WIDTH CENTER) ================= */
+  .panel-form {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    left: 25%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .form-inner {
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:0.66rem;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--brass-dim);
+    margin:0 0 14px;
+  }
+
+  h1.title{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:2.05rem;
+    line-height:1.15;
+    margin:0 0 10px;
+    color:var(--ink);
+  }
+
+  .sub{
+    font-size:0.92rem;
+    color:var(--muted-2);
+    line-height:1.55;
+    margin:0 0 36px;
+  }
+
+  .field{
+    margin-bottom:20px;
+  }
+
+  .field label{
+    display:block;
+    font-size:0.72rem;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--muted-2);
+    margin-bottom:8px;
+  }
+
+  .field input{
+    width:100%;
+    padding:13px 16px;
+    font-family:'Manrope', sans-serif;
+    font-size:0.95rem;
+    color:var(--ink);
+    background:var(--paper-2);
+    border:1px solid transparent;
+    border-radius:var(--radius);
+    outline:none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .field input::placeholder{ color:#a8a293; }
+  .field input:focus{
+    border-color:var(--brass);
+    background:#fbf9f4;
+  }
+
+  .field-password{
+    position:relative;
+    display:flex;
+    align-items:center;
+  }
+  .field-password input{
+    padding-right:44px;
+  }
+  .eye-toggle{
+    position:absolute;
+    right:14px;
+    top:50%;
+    transform:translateY(-50%);
+    width:20px;
+    height:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:none;
+    border:none;
+    padding:0;
+    cursor:pointer;
+    color:var(--muted-2);
+    transition: color 0.2s ease;
+  }
+  .eye-toggle:hover{ color:var(--brass-dim); }
+  .eye-toggle svg{
+    width:18px;
+    height:18px;
+  }
+  .eye-toggle .eye-closed{ display:none; }
+  .eye-toggle.is-visible .eye-open{ display:none; }
+  .eye-toggle.is-visible .eye-closed{ display:block; }
+
+  .row-between{
+    display:flex;
+    align-items:center;
+    margin:-4px 0 28px;
+  }
+
+  .remember{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:0.83rem;
+    color:var(--muted-2);
+  }
+  .remember input{
+    width:14px; height:14px;
+    accent-color:var(--brass-dim);
+  }
+
+  .submit{
+    width:100%;
+    padding:14px;
+    font-family:'Manrope', sans-serif;
+    font-size:0.9rem;
+    font-weight:700;
+    letter-spacing:0.02em;
+    color:var(--paper);
+    background:var(--ink);
+    border:none;
+    border-radius:var(--radius);
+    cursor:pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .submit:hover{ background:#000; }
+  .submit:active{ transform:scale(0.99); }
+
+  /* ================= VISUAL PANEL ================= */
+  .panel-visual {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 56px;
+    color: var(--paper);
+    z-index: 1;
+  }
+
+  .plate-wrap{
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+
+  .plate{
+    width:150px; height:150px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(circle at 35% 30%, rgba(230,194,129,0.14), transparent 55%),
+      linear-gradient(160deg, #1e212b, #14161c 70%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.03),
+      0 0 40px rgba(0,0,0,0.5);
+    margin-bottom:28px;
+  }
+
+  .plate svg{ width:56px; height:56px; }
+
+  .wordmark{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:500;
+    font-size:2.7rem;
+    letter-spacing:0.01em;
+    margin:0;
+    color:var(--paper);
+  }
+
+  .railtag{
+    font-family:'Space Mono', monospace;
+    font-size:0.62rem;
+    letter-spacing:0.28em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-top:10px;
+    opacity:0.85;
+  }
+
+  .plate-rule{
+    width:34px; height:1px;
+    background:var(--line);
+    margin:26px 0 20px;
+  }
+
+  .plate-copy{
+    max-width:320px;
+    font-size:0.93rem;
+    line-height:1.65;
+    color:rgba(246,243,236,0.55);
+    font-weight:400;
+  }
+
+  .addr{
+    margin-top:34px;
+    font-family:'Space Mono', monospace;
+    font-size:0.68rem;
+    letter-spacing:0.14em;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+
+  /* ---------------- responsive (mobile: stacked, horizontal curve) ---------------- */
+  @media (max-width: 900px){
+    .container{
+      height: auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+    }
+    .curve-layer{ display: none; }
+
+    .panel-visual{
+      position: relative;
+      top: unset;
+      right: unset;
+      transform: none;
+      width: 100%;
+      height: auto;
+      min-height: 300px;
+      padding: 56px 32px 92px;
+      background: var(--charcoal);
+      order: 1;
+    }
+
+    .mobile-curve{
+      display: block;
+      order: 2;
+      position: relative;
+      z-index: 3;
+      height: 64px;
+      margin-top: -56px;
+      pointer-events: none;
+    }
+    .mobile-curve svg{ display:block; width:100%; height:100%; }
+
+    .panel-form{
+      position: relative;
+      top: unset;
+      left: unset;
+      transform: none;
+      width: 100%;
+      max-width: 100%;
+      background: var(--paper);
+      padding: 36px 28px 64px;
+      order: 3;
+      display: flex;
+      justify-content: center;
+    }
+
+    .wordmark{ font-size: 2.15rem; }
+    .plate{ width: 108px; height: 108px; margin-bottom: 18px; }
+    .plate svg{ width: 40px; height: 40px; }
+    .plate-copy{ display: none; }
+    .addr{ margin-top: 18px; }
+    .glow{ width: 380px; height: 380px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ================= THE SVG CURVE LAYER (desktop only) ================= -->
+  <svg class="curve-layer" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <path fill="#f6f3ec" d="M 0 0 L 40 0 C 50 30, 50 70, 40 100 L 0 100 Z"/>
+  </svg>
+
+  <!-- ================= FORM PANEL (1/4th Center) ================= -->
+  <section class="panel panel-form">
+    <div class="form-inner">
+      <p class="eyebrow">Welcome back</p>
+      <h1 class="title">Sign in to Crib</h1>
+      <p class="sub">Access your inventory dashboard.</p>
+
+      <form onsubmit="event.preventDefault();">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="you@domain.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="field-password">
+            <input id="password" type="password" placeholder="••••••••••" autocomplete="current-password">
+            <button type="button" class="eye-toggle" id="eyeToggle" aria-label="Show password">
+              <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3l18 18"/>
+                <path d="M10.6 5.2A10.8 10.8 0 0 1 12 5c7 0 10.5 7 10.5 7a13.4 13.4 0 0 1-3.1 4.1M6.6 6.6C3.4 8.6 1.5 12 1.5 12S5 19 12 19a10.6 10.6 0 0 0 5.4-1.5"/>
+                <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="row-between">
+          <label class="remember">
+            <input type="checkbox">
+            Stay signed in
+          </label>
+        </div>
+
+        <button type="submit" class="submit">Sign in</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= MOBILE CURVE (horizontal, only shows on small screens) ================= -->
+  <div class="mobile-curve">
+    <svg viewBox="0 0 100 20" preserveAspectRatio="none">
+      <path fill="#f6f3ec" d="M0,20 L0,16 C30,4 70,4 100,16 L100,20 Z"/>
+    </svg>
+  </div>
+
+  <!-- ================= VISUAL PANEL ================= -->
+  <section class="panel panel-visual">
+    <div class="glow"></div>
+    <div class="plate-wrap">
+      <div class="plate">
+        <svg viewBox="0 0 66 66" fill="none">
+          <rect x="16" y="24" width="34" height="24" rx="2" stroke="var(--brass)" stroke-width="2"/>
+          <path d="M16 32H50" stroke="var(--brass)" stroke-width="2"/>
+          <path d="M24 24V19a9 9 0 0 1 18 0v5" stroke="var(--brass)" stroke-width="2"/>
+          <circle cx="33" cy="40" r="1.6" fill="var(--brass)"/>
+        </svg>
+      </div>
+      <h2 class="wordmark">Crib</h2>
+      <p class="railtag">Ruby · on Rails</p>
+      <div class="plate-rule"></div>
+      <p class="plate-copy">Every crate, shelf, and unit — tracked, counted, in its place.</p>
+      <p class="addr">Warehouse Access — Authorized Only</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const eyeToggle = document.getElementById('eyeToggle');
+  const passwordInput = document.getElementById('password');
+  eyeToggle.addEventListener('click', () => {
+    const isVisible = passwordInput.type === 'text';
+    passwordInput.type = isVisible ? 'password' : 'text';
+    eyeToggle.classList.toggle('is-visible', !isVisible);
+    eyeToggle.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+  });
+</script>
+
+</body>
+</html>

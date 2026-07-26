@@ -1,0 +1,121 @@
+========================================
+CRIB ON RAILS - PROJECT SUMMARY
+========================================
+
+1. MODELS CREATED
+-----------------
+- Admin (custom string ID)
+- StockManager (custom string ID)
+- OrderReceiver (custom string ID)
+- Customer
+- Supplier
+- Category
+- Product
+- Purchase
+- Order
+- OrderItem
+- PriceChange
+
+2. AUTHENTICATION SYSTEM
+------------------------
+- BCrypt for password hashing (cost factor: 10)
+- JWT tokens for session management
+- Two-token system:
+  * Auth token (1 hour expiry)
+  * Refresh token (7 days expiry)
+- Tokens stored in HTTP-only cookies
+
+3. LOGIN FEATURE
+----------------
+- Login with email OR custom string ID
+- Checks users in order: OrderReceiver → StockManager → Admin
+- Redirects to role-specific dashboard:
+  * Admin → /admin
+  * StockManager → /stock_manager
+  * OrderReceiver → /order_receiver
+
+4. ROLE-BASED ACCESS CONTROL
+----------------------------
+- Admin: Can manage everything
+- StockManager: Can manage inventory and purchases
+- OrderReceiver: Can manage orders
+
+Each role has its own:
+- Base controller with authentication check
+- Dashboard controller
+- Dashboard view
+
+5. TOKEN REFRESH
+----------------
+- Frontend intercepts 401 responses
+- Automatically calls /refresh endpoint
+- Retries original request after refresh
+- Redirects to login if refresh fails
+
+6. ENVIRONMENT VARIABLES (.env)
+--------------------------------
+SECRET_KEY_BASE=45ecr6tforc4ib0nra1l5
+REFRESH_KEY_BASE=3h1s1saf0c7in9refr9shtok3n415ga
+AUTH_TOKEN_LIFE=3600 (1 hour)
+REFRESH_TOKEN_LIFE=604800 (7 days)
+
+7. ROUTES
+---------
+GET  /login              - Login page
+POST /login              - Login form submission
+POST /refresh            - Refresh auth token
+GET  /admin              - Admin dashboard (protected)
+GET  /stock_manager      - Stock Manager dashboard (protected)
+GET  /order_receiver     - Order Receiver dashboard (protected)
+
+8. CONTROLLER STRUCTURE
+-----------------------
+app/controllers/
+├── application_controller.rb
+├── login_controller.rb
+├── refresh_controller.rb
+├── admin/
+│   ├── base_controller.rb
+│   └── dashboard_controller.rb
+├── stock_manager/
+│   ├── base_controller.rb
+│   └── dashboard_controller.rb
+└── order_receiver/
+    ├── base_controller.rb
+    └── dashboard_controller.rb
+
+9. VIEWS
+--------
+app/views/
+├── layouts/application.html.erb
+├── login/index.html.erb
+├── admin/dashboard/index.html.erb
+├── stock_manager/dashboard/index.html.erb
+└── order_receiver/dashboard/index.html.erb
+
+10. HELPERS
+-----------
+app/helpers/auth_helper.rb - JWT encode/decode functions
+
+11. GEMS ADDED
+--------------
+- bcrypt (password hashing)
+- jwt (JSON Web Tokens)
+- dotenv-rails (environment variables)
+
+12. TEST LOGIN CREDENTIALS
+--------------------------
+Admin:
+  ID: ADMIN001
+  Email: admin@example.com
+  Password: password123
+
+StockManager:
+  ID: SM001
+  Email: stock@example.com
+  Password: password123
+
+OrderReceiver:
+  ID: OR001
+  Email: order@example.com
+  Password: password123

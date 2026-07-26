@@ -1,0 +1,38 @@
+<%= stylesheet_link_tag "stock_manager/categories" %>
+
+<div class="modal-overlay active" id="categoryFormModal">
+  <div class="modal-content" style="max-width: 400px;">
+    <div class="modal-header">
+      <h2><%= action == 'new' ? "Add New Category" : "Edit Category" %></h2>
+      <button type="button" class="modal-close" onclick="closeCategoryFormModal()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <% if @category.errors.any? %>
+        <div class="error-messages">
+          <ul>
+            <% @category.errors.full_messages.each do |msg| %>
+              <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+      
+      <form id="categoryForm" method="post" data-turbo="false" action="<%= action == 'new' ? stock_manager_categories_path : stock_manager_category_path(@category) %>">
+        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+        <input type="hidden" name="_method" value="<%= action == 'new' ? 'post' : 'patch' %>">
+        
+        <div class="form-group">
+          <label for="category_name">Name</label>
+          <input type="text" name="category[name]" id="category_name" required placeholder="Enter category name" value="<%= @category.name %>" class="category-input">
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="categorySubmitBtn"><%= action == 'new' ? "Create Category" : "Update Category" %></button>
+          <button type="button" class="btn btn-secondary" onclick="closeCategoryFormModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+

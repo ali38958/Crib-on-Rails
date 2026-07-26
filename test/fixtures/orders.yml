@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  customer: one
+  price_paid: 9.99
+  total_price: 9.99
+  status: 1
+
+two:
+  customer: two
+  price_paid: 9.99
+  total_price: 9.99
+  status: 1

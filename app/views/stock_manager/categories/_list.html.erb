@@ -1,0 +1,44 @@
+<div class="modal-overlay active" id="categoryModal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h2>Manage Categories</h2>
+      <button type="button" class="modal-close" onclick="window.closeCategoryModal()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="category-actions" style="margin-bottom: 16px;">
+        <button onclick="window.openNewCategoryForm()" class="btn btn-primary">Add New Category</button>
+      </div>
+      
+      <table class="category-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="categoryList">
+          <% @categories.each do |category| %>
+            <tr>
+              <td><%= category.id %></td>
+              <td><%= category.name %></td>
+              <td>
+                <button onclick="window.openEditCategoryForm('<%= category.id %>')" class="btn-edit">Edit</button>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Close on backdrop click
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'categoryModal') {
+      window.closeCategoryModal();
+    }
+  });
+</script>

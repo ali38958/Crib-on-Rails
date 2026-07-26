@@ -1,0 +1,417 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "stock_manager/products" %>
+<% end %>
+
+<div class="page-header">
+  <div>
+    <p class="page-eyebrow">Inventory</p>
+    <h1 class="page-title">Products</h1>
+    <p class="page-sub">View all products and their stock levels.</p>
+  </div>
+  <div class="page-actions">
+    <button onclick="openProductModal()" class="btn btn-primary">Add New Product</button>
+  </div>
+</div>
+
+<div class="panel-card">
+    <table>
+    <thead>
+        <tr>
+        <th style="width: 80px;">Image</th>
+        <th>Product</th>
+        <th>Category</th>
+        <th style="width: 80px;">Qty</th>
+        <th style="width: 100px;">Price</th>
+        <th style="width: 120px;">Status</th>
+        <th style="width: 100px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% @products.each do |product| %>
+        <tr>
+            <td style="text-align: center;">
+            <% if product.image.attached? %>
+                <img src="<%= url_for(product.image) %>" 
+                    alt="<%= product.name %>" 
+                    class="product-thumbnail" 
+                    onclick="showImageModal(this.src)">
+            <% else %>
+                <span class="no-image">No image</span>
+            <% end %>
+            </td>
+            <td><%= product.name %></td>
+            <td><%= product.category&.name || 'N/A' %></td>
+            <td><%= product.quantity %></td>
+            <td>$<%= product.current_price %></td>
+            <td>
+            <span class="status-pill <%= product.quantity == 0 ? 'out' : (product.quantity < 10 ? 'low' : 'in-stock') %>">
+                <% if product.quantity == 0 %>
+                Out of Stock
+                <% elsif product.quantity < 10 %>
+                Low Stock
+                <% else %>
+                In Stock
+                <% end %>
+            </span>
+            </td>
+            <td>
+            <button onclick="openProductModal('<%= product.id %>')" class="btn-edit">Edit</button>
+            </td>
+        </tr>
+        <% end %>
+    </tbody>
+    </table>
+</div>
+
+<!-- Modal Containers -->
+<div id="productModalContainer"></div>
+<div id="categoryModalContainer"></div>
+<div id="categoryFormModalContainer"></div>
+
+<script>
+  // Global close functions
+  window.closeProductModal = function() {
+    const modal = document.getElementById('productModal');
+    if (modal) {
+      modal.remove();
+    }
+    document.body.style.overflow = 'auto';
+  };
+  
+  window.closeCategoryModal = function() {
+    const modal = document.getElementById('categoryModal');
+    if (modal) {
+      modal.remove();
+    }
+    // Show product modal if it was hidden
+    const productModal = document.getElementById('productModal');
+    if (productModal) {
+      productModal.style.display = 'flex';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+  };
+  
+  window.closeCategoryFormModal = function() {
+    const modal = document.getElementById('categoryFormModal');
+    if (modal) {
+      modal.remove();
+    }
+    // Show category list modal if it was hidden
+    const categoryModal = document.getElementById('categoryModal');
+    if (categoryModal) {
+      categoryModal.style.display = 'flex';
+    } else {
+      // If we don't have category modal, maybe show product modal
+      const productModal = document.getElementById('productModal');
+      if (productModal) {
+        productModal.style.display = 'flex';
+      } else {
+        document.body.style.overflow = 'auto';
+      }
+    }
+  };
+  
+  // Open Product Modal
+  window.openProductModal = function(id = null) {
+    const container = document.getElementById('productModalContainer');
+    container.innerHTML = '';
+    
+    let url = id ? 
+      '/stock_manager/products/' + id + '/edit' : 
+      '/stock_manager/products/new';
+    
+    fetch(url, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      container.innerHTML = html;
+      document.body.style.overflow = 'hidden';
+      if (typeof window.initProductModalEvents === 'function') {
+        window.initProductModalEvents();
+      }
+    })
+    .catch(error => {
+      console.error('Error loading modal:', error);
+    });
+  };
+  
+  // Open Category Modal
+  window.initProductModalEvents = function() {
+    const dropZone = document.getElementById('fileDropZone');
+    const fileInput = document.getElementById('productImageInput');
+    const previewContainer = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const existingImage = document.getElementById('existingImage');
+    
+    if (dropZone && fileInput) {
+      dropZone.onclick = function() {
+        fileInput.click();
+      };
+      
+      dropZone.ondragover = function(e) {
+        e.preventDefault();
+        this.classList.add('dragover');
+      };
+      
+      dropZone.ondragleave = function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+      };
+      
+      dropZone.ondrop = function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+        
+        if (e.dataTransfer.files.length) {
+          fileInput.files = e.dataTransfer.files;
+          handleFilePreview(fileInput.files[0]);
+        }
+      };
+      
+      fileInput.onchange = function() {
+        if (this.files.length) {
+          handleFilePreview(this.files[0]);
+        }
+      };
+    }
+    
+    function handleFilePreview(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        if(previewImg) previewImg.src = e.target.result;
+        if(previewContainer) previewContainer.style.display = 'block';
+        if (existingImage) {
+          existingImage.style.display = 'none';
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  window.removeImage = function() {
+    const fileInput = document.getElementById('productImageInput');
+    const previewContainer = document.getElementById('imagePreview');
+    const existingImage = document.getElementById('existingImage');
+    
+    if(fileInput) fileInput.value = '';
+    if(previewContainer) previewContainer.style.display = 'none';
+    if (existingImage) {
+      existingImage.style.display = 'block';
+    }
+  };
+
+  window.openCategoryModal = function() {
+    const container = document.getElementById('categoryModalContainer');
+    
+    // Hide product modal first if open
+    const productModal = document.getElementById('productModal');
+    if (productModal) {
+      productModal.style.display = 'none';
+    }
+    
+    fetch('/stock_manager/categories', {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      container.innerHTML = html;
+      document.body.style.overflow = 'hidden';
+    })
+    .catch(error => {
+      console.error('Error loading categories:', error);
+    });
+  };
+  
+  // Open New Category Form
+  window.openNewCategoryForm = function() {
+    const container = document.getElementById('categoryFormModalContainer');
+    
+    // Hide category modal first if open
+    const categoryModal = document.getElementById('categoryModal');
+    if (categoryModal) {
+      categoryModal.style.display = 'none';
+    }
+    
+    fetch('/stock_manager/categories/new', {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      container.innerHTML = html;
+      document.body.style.overflow = 'hidden';
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  };
+  
+  // Open Edit Category Form
+  window.openEditCategoryForm = function(id) {
+    const container = document.getElementById('categoryFormModalContainer');
+    
+    // Hide category modal first if open
+    const categoryModal = document.getElementById('categoryModal');
+    if (categoryModal) {
+      categoryModal.style.display = 'none';
+    }
+    
+    fetch('/stock_manager/categories/' + id + '/edit', {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      container.innerHTML = html;
+      document.body.style.overflow = 'hidden';
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  };
+  
+  // Image Modal
+  window.showImageModal = function(src) {
+    const overlay = document.createElement('div');
+    overlay.className = 'image-modal-overlay';
+    overlay.innerHTML = '<img src="' + src + '" alt="Product Image">';
+    document.body.appendChild(overlay);
+    
+    overlay.addEventListener('click', function() {
+      this.remove();
+    });
+    
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modal = document.querySelector('.image-modal-overlay');
+        if (modal) {
+          modal.remove();
+        }
+      }
+    });
+  };
+  
+  // Close modals on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const imageModal = document.querySelector('.image-modal-overlay');
+      if (imageModal) {
+        imageModal.remove();
+        return;
+      }
+      
+      const categoryFormModal = document.getElementById('categoryFormModal');
+      if (categoryFormModal && categoryFormModal.style.display !== 'none') {
+        window.closeCategoryFormModal();
+        return;
+      }
+      
+      const categoryModal = document.getElementById('categoryModal');
+      if (categoryModal && categoryModal.style.display !== 'none') {
+        window.closeCategoryModal();
+        return;
+      }
+      
+      const productModal = document.getElementById('productModal');
+      if (productModal && productModal.style.display !== 'none') {
+        window.closeProductModal();
+        return;
+      }
+    }
+  });
+
+  // Event Delegation for dynamically loaded modals
+  document.addEventListener('click', function(e) {
+    // Close product modal on backdrop click
+    if (e.target && e.target.id === 'productModal') {
+      window.closeProductModal();
+    }
+    // Close category form modal on backdrop click
+    if (e.target && e.target.id === 'categoryFormModal') {
+      window.closeCategoryFormModal();
+    }
+    // Close category modal on backdrop click
+    if (e.target && e.target.id === 'categoryModal') {
+      window.closeCategoryModal();
+    }
+  });
+
+  document.addEventListener('submit', function(e) {
+    if (e.target && e.target.id === 'categoryForm') {
+      e.preventDefault();
+      
+      const form = e.target;
+      const submitBtn = document.getElementById('categorySubmitBtn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+      }
+      
+      const formData = new FormData(form);
+      
+      fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        body: formData
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          return response.text().then(html => {
+            throw html;
+          });
+        }
+      })
+      .then(data => {
+        if (data.success) {
+          if (typeof window.showNotification === 'function') {
+            window.showNotification(data.message || 'Category saved!', 'success', 1000);
+          }
+          
+          if (data.category) {
+            const select = document.getElementById('product_category_id');
+            if (select) {
+              const option = document.createElement('option');
+              option.value = data.category.id;
+              option.textContent = data.category.name;
+              select.appendChild(option);
+              select.value = data.category.id;
+            }
+          }
+          
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Success';
+          }
+          
+          setTimeout(function() {
+            if (typeof window.closeCategoryFormModal === 'function') {
+              window.closeCategoryFormModal();
+            }
+            if (typeof window.openCategoryModal === 'function') {
+              window.openCategoryModal();
+            }
+          }, 1000);
+        }
+      })
+      .catch(errorHtml => {
+        const container = document.getElementById('categoryFormModalContainer');
+        if (container) {
+          container.innerHTML = errorHtml;
+        }
+      });
+    }
+  });
+</script>
