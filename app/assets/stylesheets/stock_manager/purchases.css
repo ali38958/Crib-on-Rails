@@ -71,5 +71,80 @@ tbody tr:last-child td {
 }
 
 tbody tr:hover {
-  background: rgba(199,154,86,0.05);
+  background: rgba(199, 154, 86, 0.05);
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: #fbf9f4;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-light);
+}
+
+.filters-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filter-group .filter-input,
+.filter-group .filter-select {
+  padding: 8px 14px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.85rem;
+  color: var(--ink);
+  background: var(--paper-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.filter-group .filter-input:focus,
+.filter-group .filter-select:focus {
+  border-color: var(--brass);
+  background: #fbf9f4;
+}
+
+.filter-group .filter-input {
+  min-width: 150px;
+}
+
+.filter-group .filter-select {
+  min-width: 130px;
+  cursor: pointer;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+}
+
+.btn-sm.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn-sm.btn-primary:hover {
+  background: #000;
+}
+
+.btn-sm.btn-secondary {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+
+.btn-sm.btn-secondary:hover {
+  background: #d5cec0;
 }

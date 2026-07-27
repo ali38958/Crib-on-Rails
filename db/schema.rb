@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_25_155751) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_27_175411) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -127,8 +127,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_25_155751) do
 
   create_table "purchases", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.text "notes"
     t.integer "product_id"
     t.integer "quantity", default: 0
+    t.integer "status", default: 0
     t.integer "supplier_id"
     t.decimal "total_price", precision: 10, scale: 2, null: false
     t.datetime "updated_at", null: false
@@ -149,10 +151,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_25_155751) do
   end
 
   create_table "suppliers", force: :cascade do |t|
+    t.text "address"
+    t.string "contact_person"
     t.datetime "created_at", null: false
     t.string "email", limit: 50
     t.string "name", limit: 50
     t.string "phone", limit: 20
+    t.integer "purchases_count", default: 0
+    t.string "tax_id"
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_suppliers_on_email", unique: true
   end

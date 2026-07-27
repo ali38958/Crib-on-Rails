@@ -24,12 +24,13 @@ Rails.application.routes.draw do
     end
   end
   
-  namespace :stock_manager do
-    get '/', to: 'dashboard#index'
-    resources :products, only: [:index, :new, :create, :edit, :update]
-    resources :purchases, only: [:index, :new, :create]
-    resources :categories, only: [:index, :new, :create, :edit, :update]
-  end
+namespace :stock_manager do
+  get '/', to: 'dashboard#index'
+  resources :suppliers, only: [:index, :new, :create, :edit, :update, :destroy]
+  resources :purchases, only: [:new, :create, :edit, :update, :destroy]  # No index
+  resources :products, only: [:index, :new, :create, :edit, :update]
+  resources :categories, only: [:index, :new, :create, :edit, :update]
+end
   
   namespace :order_receiver do
     get '/', to: 'dashboard#index'

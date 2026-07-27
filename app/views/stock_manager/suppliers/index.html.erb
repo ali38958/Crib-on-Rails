@@ -1,0 +1,308 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "stock_manager/suppliers" %>
+  <%= stylesheet_link_tag "stock_manager/purchases" %>
+<% end %>
+
+<div class="suppliers-container">
+  <div class="page-header">
+    <div>
+      <p class="page-eyebrow">Procurement</p>
+      <h1 class="page-title">Suppliers & Purchases</h1>
+      <p class="page-sub">Manage your suppliers and purchase orders.</p>
+    </div>
+  </div>
+
+  <!-- View Toggle -->
+  <div class="view-toggle">
+    <div class="view-tabs">
+      <button class="view-tab <%= 'active' if @view == 'suppliers' %>" onclick="switchView('suppliers')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Suppliers
+      </button>
+      <button class="view-tab <%= 'active' if @view == 'purchases' %>" onclick="switchView('purchases')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        Purchases
+      </button>
+    </div>
+  </div>
+
+  <!-- Views Container -->
+  <div class="views-container">
+    <!-- Suppliers View -->
+    <div class="view-panel <%= 'active' if @view == 'suppliers' %>" id="suppliersPanel">
+      <div class="panel-header">
+        <div class="panel-actions">
+          <button onclick="openSupplierModal()" class="btn btn-primary">+ Add Supplier</button>
+        </div>
+        <div class="panel-search">
+          <input type="text" id="supplierSearch" class="filter-input" placeholder="Search suppliers..." value="<%= @supplier_search %>">
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Contact Person</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Address</th>
+              <th>Purchases</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @suppliers.any? %>
+              <% @suppliers.each do |supplier| %>
+                <tr>
+                  <td><strong><%= supplier.name %></strong></td>
+                  <td><%= supplier.contact_person || '-' %></td>
+                  <td><%= supplier.phone %></td>
+                  <td><%= supplier.email || '-' %></td>
+                  <td><%= supplier.address || '-' %></td>
+                  <td><%= supplier.purchases_count || 0 %></td>
+                  <td>
+                    <button onclick="openPurchaseModal('<%= supplier.id %>')" class="btn-edit" title="New Purchase">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    </button>
+                    <button onclick="editSupplier('<%= supplier.id %>')" class="btn-edit">Edit</button>
+                  </td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: var(--muted-2);">No suppliers found</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Supplier Pagination -->
+      <div class="pagination-bar">
+        <div class="pagination-info">
+          Showing <%= @suppliers.offset_value + 1 %>-<%= [@suppliers.offset_value + @suppliers.limit_value, @suppliers.total_count].min %> of <%= @suppliers.total_count %> suppliers
+        </div>
+        <div class="pagination-controls">
+          <select id="supplierLimit" class="filter-select">
+            <option value="10" <%= 'selected' if @supplier_limit == 10 %>>10 per page</option>
+            <option value="25" <%= 'selected' if @supplier_limit == 25 %>>25 per page</option>
+            <option value="50" <%= 'selected' if @supplier_limit == 50 %>>50 per page</option>
+          </select>
+          <%= paginate @suppliers, 
+              param_name: :supplier_page,
+              window: 2,
+              params: params.permit(:view, :supplier_search, :supplier_limit, :purchase_page, :purchase_limit, :purchase_search, :purchase_date_from, :purchase_date_to, :purchase_product) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Purchases View -->
+    <div class="view-panel <%= 'active' if @view == 'purchases' %>" id="purchasesPanel">
+      <div class="panel-header">
+        <div class="panel-actions">
+          <button onclick="openPurchaseModal()" class="btn btn-primary">+ New Purchase</button>
+        </div>
+      </div>
+
+      <!-- Purchase Filters -->
+      <div class="filters-bar">
+        <div class="filters-left">
+          <div class="filter-group">
+            <input type="text" id="purchaseSearch" class="filter-input" placeholder="Search purchases..." value="<%= @purchase_search %>">
+          </div>
+          <div class="filter-group">
+            <select id="purchaseProduct" class="filter-select">
+              <option value="">All Products</option>
+              <% @all_products.each do |product| %>
+                <option value="<%= product.id %>" <%= 'selected' if @purchase_product.to_i == product.id %>><%= product.name %></option>
+              <% end %>
+            </select>
+          </div>
+          <div class="filter-group">
+            <input type="date" id="purchaseDateFrom" class="filter-input" value="<%= @purchase_date_from %>">
+            <span style="margin: 0 4px; color: var(--muted);">to</span>
+            <input type="date" id="purchaseDateTo" class="filter-input" value="<%= @purchase_date_to %>">
+          </div>
+          <button id="applyPurchaseFilters" class="btn btn-sm btn-primary">Apply</button>
+          <button id="clearPurchaseFilters" class="btn btn-sm btn-secondary">Clear</button>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Purchase ID</th>
+              <th>Supplier</th>
+              <th>Product</th>
+              <th>Quantity</th>
+              <th>Total Amount</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @purchases.any? %>
+              <% @purchases.each do |purchase| %>
+                <tr>
+                  <td>#<%= purchase.id %></td>
+                  <td><%= purchase.supplier&.name || 'N/A' %></td>
+                  <td><%= purchase.product&.name || 'N/A' %></td>
+                  <td><%= purchase.quantity %></td>
+                  <td>$<%= purchase.total_price %></td>
+                  <td>
+                    <span class="status-pill <%= purchase.status %>">
+                      <%= purchase.status.capitalize %>
+                    </span>
+                  </td>
+                  <td><%= purchase.created_at.strftime("%b %d, %Y") %></td>
+                  <td>
+                    <button onclick="editPurchase('<%= purchase.id %>')" class="btn-edit">Edit</button>
+                  </td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 40px; color: var(--muted-2);">No purchases found</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Purchase Pagination -->
+      <div class="pagination-bar">
+        <div class="pagination-info">
+          Showing <%= @purchases.offset_value + 1 %>-<%= [@purchases.offset_value + @purchases.limit_value, @purchases.total_count].min %> of <%= @purchases.total_count %> purchases
+        </div>
+        <div class="pagination-controls">
+          <select id="purchaseLimit" class="filter-select">
+            <option value="10" <%= 'selected' if @purchase_limit == 10 %>>10 per page</option>
+            <option value="25" <%= 'selected' if @purchase_limit == 25 %>>25 per page</option>
+            <option value="50" <%= 'selected' if @purchase_limit == 50 %>>50 per page</option>
+          </select>
+          <%= paginate @purchases, 
+              param_name: :purchase_page,
+              window: 2,
+              params: params.permit(:view, :supplier_search, :supplier_limit, :purchase_limit, :purchase_search, :purchase_date_from, :purchase_date_to, :purchase_product) %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Containers -->
+<div id="supplierModalContainer"></div>
+<div id="purchaseModalContainer"></div>
+
+<script>
+  // View switching
+  function switchView(view) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', view);
+    url.searchParams.set('supplier_page', 1);
+    url.searchParams.set('purchase_page', 1);
+    window.location.href = url.toString();
+  }
+
+  // Supplier functions
+  function openSupplierModal(id = null) {
+    const container = document.getElementById('supplierModalContainer');
+    container.innerHTML = '';
+    let url = id ? '/stock_manager/suppliers/' + id + '/edit' : '/stock_manager/suppliers/new';
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(response => response.text())
+      .then(html => { container.innerHTML = html; document.body.style.overflow = 'hidden'; });
+  }
+
+  function editSupplier(id) { openSupplierModal(id); }
+
+  // Purchase functions
+  function openPurchaseModal(supplierId = null) {
+    const container = document.getElementById('purchaseModalContainer');
+    container.innerHTML = '';
+    let url = '/stock_manager/purchases/new';
+    if (supplierId) url += '?supplier_id=' + supplierId;
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(response => response.text())
+      .then(html => { container.innerHTML = html; document.body.style.overflow = 'hidden'; });
+  }
+
+  function editPurchase(id) {
+    const container = document.getElementById('purchaseModalContainer');
+    container.innerHTML = '';
+    fetch('/stock_manager/purchases/' + id + '/edit', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(response => response.text())
+      .then(html => { container.innerHTML = html; document.body.style.overflow = 'hidden'; });
+  }
+
+  // Debounced search
+  let searchTimeout;
+  document.addEventListener('DOMContentLoaded', function() {
+    const supplierSearch = document.getElementById('supplierSearch');
+    const purchaseSearch = document.getElementById('purchaseSearch');
+
+    if (supplierSearch) {
+      supplierSearch.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.set('supplier_search', this.value);
+          url.searchParams.set('supplier_page', 1);
+          window.location.href = url.toString();
+        }, 500);
+      });
+    }
+
+    if (purchaseSearch) {
+      purchaseSearch.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.set('purchase_search', this.value);
+          url.searchParams.set('purchase_page', 1);
+          window.location.href = url.toString();
+        }, 500);
+      });
+    }
+
+    // Limit changes
+    document.getElementById('supplierLimit')?.addEventListener('change', function() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('supplier_limit', this.value);
+      url.searchParams.set('supplier_page', 1);
+      window.location.href = url.toString();
+    });
+
+    document.getElementById('purchaseLimit')?.addEventListener('change', function() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('purchase_limit', this.value);
+      url.searchParams.set('purchase_page', 1);
+      window.location.href = url.toString();
+    });
+
+    // Apply purchase filters
+    document.getElementById('applyPurchaseFilters')?.addEventListener('click', function() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('purchase_product', document.getElementById('purchaseProduct').value);
+      url.searchParams.set('purchase_date_from', document.getElementById('purchaseDateFrom').value);
+      url.searchParams.set('purchase_date_to', document.getElementById('purchaseDateTo').value);
+      url.searchParams.set('purchase_page', 1);
+      window.location.href = url.toString();
+    });
+
+    // Clear purchase filters
+    document.getElementById('clearPurchaseFilters')?.addEventListener('click', function() {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('purchase_search');
+      url.searchParams.delete('purchase_product');
+      url.searchParams.delete('purchase_date_from');
+      url.searchParams.delete('purchase_date_to');
+      url.searchParams.set('purchase_page', 1);
+      window.location.href = url.toString();
+    });
+  });
+</script>
