@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  root to: 'login#index'
   get '/login', to: 'login#index'
   post '/login', to: 'login#create'
   post '/refresh', to: 'refresh#create'

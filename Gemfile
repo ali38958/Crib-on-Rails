@@ -15,7 +15,7 @@ gem 'bcrypt'
 gem 'jwt'
 gem 'dotenv-rails'
 gem 'dartsass-rails'
-gem 'kaminari'
+gem 'kaminari', github: 'kaminari/kaminari'
 
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
