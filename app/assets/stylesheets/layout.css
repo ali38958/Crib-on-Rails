@@ -25,6 +25,27 @@
   scrollbar-color: var(--brass-dim) var(--charcoal);
 }
 
+.main {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - var(--header-h));
+  scrollbar-width: thin;
+  scrollbar-color: var(--brass-dim) var(--charcoal);
+}
+
+.main::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main::-webkit-scrollbar-track {
+  background: #f8f5ee;
+}
+
+.main::-webkit-scrollbar-thumb {
+  background: var(--brass-dim);
+  border-radius: 10px;
+}
+
 /* Header */
 .header {
   height: var(--header-h);
@@ -195,8 +216,9 @@
 
 /* Sidebar */
 .sidebar {
-  height: auto;
-  min-height: 100%;
+  height: calc(100vh - var(--header-h));
+  min-height: calc(100vh - var(--header-h));
+  max-height: calc(100vh - var(--header-h));
   width: var(--sidebar-w);
   background: var(--charcoal);
   border-right: 1px solid var(--line);
@@ -205,6 +227,9 @@
   flex-direction: column;
   transition: width 0.3s cubic-bezier(.65, 0, .35, 1);
   overflow: hidden;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
 }
 
 .sidebar.collapsed {
@@ -512,4 +537,16 @@
     transform: translateX(100%);
     opacity: 0;
   }
+}
+
+.sidebar {
+  overflow: hidden;
+  height: 100vh;
+  position: sticky;
+  top: var(--header-h);
+}
+
+.sidebar-nav {
+  overflow: hidden;
+  height: 100%;
 }

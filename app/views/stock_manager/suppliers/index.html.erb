@@ -195,10 +195,204 @@
 </div>
 
 <!-- Modal Containers -->
-<div id="supplierModalContainer"></div>
-<div id="purchaseModalContainer"></div>
+<div id="supplierModalContainer" data-turbo="false"></div>
+<div id="purchaseModalContainer" data-turbo="false"></div>
 
 <script>
+  function closeStockManagerModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.remove();
+    }
+
+    if (!document.querySelector('.modal-overlay')) {
+      document.body.style.overflow = 'auto';
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    const closeTrigger = e.target.closest('[data-close-stock-manager-modal]');
+    if (closeTrigger) {
+      e.preventDefault();
+      closeStockManagerModal(closeTrigger.getAttribute('data-close-stock-manager-modal'));
+      return;
+    }
+
+    const overlay = e.target.closest('.modal-overlay');
+    if (overlay && e.target === overlay) {
+      closeStockManagerModal(overlay.id);
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const activeModal = document.querySelector('.modal-overlay');
+      if (activeModal) {
+        closeStockManagerModal(activeModal.id);
+      }
+    }
+  });
+
+  window.initStockManagerModalForms = function(root = document) {
+    const supplierForm = root.querySelector('#supplierForm');
+    if (supplierForm && !supplierForm.dataset.initialized) {
+      supplierForm.dataset.initialized = 'true';
+      supplierForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const submitBtn = supplierForm.querySelector('#supplierSubmitBtn');
+        const modal = supplierForm.closest('.modal-overlay');
+        const methodInput = supplierForm.querySelector('input[name="_method"]');
+        const method = (methodInput?.value || supplierForm.getAttribute('method') || 'POST').toUpperCase();
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Processing...';
+        }
+
+        const formData = new FormData(supplierForm);
+
+        fetch(supplierForm.action, {
+          method: method,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          },
+          body: formData
+        })
+          .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (response.ok && contentType.includes('application/json')) {
+              return { ok: true, json: await response.json() };
+            }
+            if (response.ok) {
+              return { ok: true, html: await response.text() };
+            }
+            return { ok: false, html: await response.text() };
+          })
+          .then(result => {
+            if (result.ok && result.json?.success) {
+              if (typeof window.showNotification === 'function') {
+                window.showNotification(result.json.message || 'Supplier saved successfully!', 'success', 2000);
+              }
+
+              if (modal) {
+                modal.remove();
+              }
+              document.body.style.overflow = 'auto';
+
+              setTimeout(() => {
+                window.location.reload();
+              }, 2200);
+              return;
+            }
+
+            if (result.html && modal) {
+              modal.innerHTML = result.html;
+              window.initStockManagerModalForms(modal);
+              if (typeof window.showNotification === 'function') {
+                window.showNotification('Please fix the form and try again.', 'error', 2000);
+              }
+            }
+
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Try Again';
+            }
+          })
+          .catch(() => {
+            if (typeof window.showNotification === 'function') {
+              window.showNotification('Something went wrong. Please try again.', 'error', 2000);
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Try Again';
+            }
+          });
+      });
+    }
+
+    const purchaseForm = root.querySelector('#purchaseForm');
+    if (purchaseForm && !purchaseForm.dataset.initialized) {
+      purchaseForm.dataset.initialized = 'true';
+      purchaseForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const submitBtn = purchaseForm.querySelector('#purchaseSubmitBtn');
+        const modal = purchaseForm.closest('.modal-overlay');
+        const methodInput = purchaseForm.querySelector('input[name="_method"]');
+        const method = (methodInput?.value || purchaseForm.getAttribute('method') || 'POST').toUpperCase();
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Processing...';
+        }
+
+        const formData = new FormData(purchaseForm);
+
+        fetch(purchaseForm.action, {
+          method: method,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          },
+          body: formData
+        })
+          .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (response.ok && contentType.includes('application/json')) {
+              return { ok: true, json: await response.json() };
+            }
+            if (response.ok) {
+              return { ok: true, html: await response.text() };
+            }
+            return { ok: false, html: await response.text() };
+          })
+          .then(result => {
+            if (result.ok && result.json?.success) {
+              if (typeof window.showNotification === 'function') {
+                window.showNotification(result.json.message || 'Purchase saved successfully!', 'success', 2000);
+              }
+
+              if (modal) {
+                modal.remove();
+              }
+              document.body.style.overflow = 'auto';
+
+              setTimeout(() => {
+                window.location.reload();
+              }, 2200);
+              return;
+            }
+
+            if (result.html && modal) {
+              modal.innerHTML = result.html;
+              window.initStockManagerModalForms(modal);
+              if (typeof window.showNotification === 'function') {
+                window.showNotification('Please fix the form and try again.', 'error', 2000);
+              }
+            }
+
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Try Again';
+            }
+          })
+          .catch(() => {
+            if (typeof window.showNotification === 'function') {
+              window.showNotification('Something went wrong. Please try again.', 'error', 2000);
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Try Again';
+            }
+          });
+      });
+    }
+  };
+
   // View switching
   function switchView(view) {
     const url = new URL(window.location.href);
@@ -215,7 +409,11 @@
     let url = id ? '/stock_manager/suppliers/' + id + '/edit' : '/stock_manager/suppliers/new';
     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(response => response.text())
-      .then(html => { container.innerHTML = html; document.body.style.overflow = 'hidden'; });
+      .then(html => {
+        container.innerHTML = html;
+        document.body.style.overflow = 'hidden';
+        window.initStockManagerModalForms(container);
+      });
   }
 
   function editSupplier(id) { openSupplierModal(id); }
@@ -228,7 +426,11 @@
     if (supplierId) url += '?supplier_id=' + supplierId;
     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(response => response.text())
-      .then(html => { container.innerHTML = html; document.body.style.overflow = 'hidden'; });
+      .then(html => {
+        container.innerHTML = html;
+        document.body.style.overflow = 'hidden';
+        window.initStockManagerModalForms(container);
+      });
   }
 
   function editPurchase(id) {
@@ -236,7 +438,11 @@
     container.innerHTML = '';
     fetch('/stock_manager/purchases/' + id + '/edit', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(response => response.text())
-      .then(html => { container.innerHTML = html; document.body.style.overflow = 'hidden'; });
+      .then(html => {
+        container.innerHTML = html;
+        document.body.style.overflow = 'hidden';
+        window.initStockManagerModalForms(container);
+      });
   }
 
   // Debounced search

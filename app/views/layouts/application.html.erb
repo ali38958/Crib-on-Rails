@@ -105,83 +105,174 @@
     <%= yield %>
   <% end %>
 
-  <script>
-    const sidebar = document.getElementById('sidebar');
-    const menuBtn = document.getElementById('menuBtn');
-    const collapseBtn = document.getElementById('collapseBtn');
-    const backdrop = document.getElementById('sidebarBackdrop');
+<script>
+  const STORAGE_KEY = 'sidebarCollapsed';
+  let sidebarEventsBound = false;
 
-    function isMobile(){ return window.innerWidth <= 900; }
+  function getSidebar() {
+    return document.getElementById('sidebar');
+  }
 
-    if (menuBtn) {
-      menuBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('mobile-open');
+  function getMenuButton() {
+    return document.getElementById('menuBtn');
+  }
+
+  function getCollapseButton() {
+    return document.getElementById('collapseBtn');
+  }
+
+  function getBackdrop() {
+    return document.getElementById('sidebarBackdrop');
+  }
+
+  function isMobile() {
+    return window.innerWidth <= 900;
+  }
+
+  function getSavedSidebarState() {
+    return localStorage.getItem(STORAGE_KEY) === 'true';
+  }
+
+  function saveSidebarState(isCollapsed) {
+    localStorage.setItem(STORAGE_KEY, String(isCollapsed));
+  }
+
+  function applySidebarState() {
+    const sidebar = getSidebar();
+    if (!sidebar) return;
+
+    if (isMobile()) {
+      sidebar.classList.remove('collapsed');
+      sidebar.setAttribute('aria-collapsed', 'false');
+      return;
+    }
+
+    const shouldCollapse = getSavedSidebarState();
+    sidebar.classList.toggle('collapsed', shouldCollapse);
+    sidebar.setAttribute('aria-collapsed', String(shouldCollapse));
+
+    const collapseBtn = getCollapseButton();
+    if (collapseBtn) {
+      collapseBtn.setAttribute('aria-expanded', String(!shouldCollapse));
+    }
+  }
+
+  function toggleSidebar() {
+    const sidebar = getSidebar();
+    const collapseBtn = getCollapseButton();
+    if (!sidebar) return;
+
+    if (isMobile()) {
+      const backdrop = getBackdrop();
+      sidebar.classList.toggle('mobile-open');
+      if (backdrop) {
         backdrop.classList.toggle('visible');
-      });
+      }
+      return;
     }
 
-    if (backdrop) {
-      backdrop.addEventListener('click', () => {
-        sidebar.classList.remove('mobile-open');
-        backdrop.classList.remove('visible');
-      });
-    }
+    const nextCollapsed = !sidebar.classList.contains('collapsed');
+    sidebar.classList.toggle('collapsed', nextCollapsed);
+    sidebar.setAttribute('aria-collapsed', String(nextCollapsed));
+    saveSidebarState(nextCollapsed);
 
     if (collapseBtn) {
-      collapseBtn.addEventListener('click', () => {
-        if (isMobile()){
-          sidebar.classList.remove('mobile-open');
-          backdrop.classList.remove('visible');
-        } else {
-          sidebar.classList.toggle('collapsed');
-        }
-      });
+      collapseBtn.setAttribute('aria-expanded', String(!nextCollapsed));
+    }
+  }
+
+  function handleSidebarClick(event) {
+    const collapseBtn = event.target.closest('#collapseBtn');
+    if (collapseBtn) {
+      event.preventDefault();
+      toggleSidebar();
+      return;
     }
 
-    window.addEventListener('resize', () => {
-      if (!isMobile()){
-        if (sidebar) sidebar.classList.remove('mobile-open');
-        if (backdrop) backdrop.classList.remove('visible');
-      }
-    });
-  </script>
+    const menuBtn = event.target.closest('#menuBtn');
+    if (menuBtn && isMobile()) {
+      const sidebar = getSidebar();
+      const backdrop = getBackdrop();
+      sidebar?.classList.toggle('mobile-open');
+      backdrop?.classList.toggle('visible');
+      return;
+    }
+
+    const backdrop = getBackdrop();
+    if (backdrop && event.target === backdrop) {
+      const sidebar = getSidebar();
+      sidebar?.classList.remove('mobile-open');
+      backdrop.classList.remove('visible');
+    }
+  }
+
+  function initializeSidebar() {
+    const sidebar = getSidebar();
+    if (!sidebar) return;
+
+    if (!sidebarEventsBound) {
+      document.addEventListener('click', handleSidebarClick);
+      window.addEventListener('resize', applySidebarState);
+      document.addEventListener('turbo:load', applySidebarState);
+      document.addEventListener('turbo:render', applySidebarState);
+      sidebarEventsBound = true;
+    }
+
+    const collapseBtn = getCollapseButton();
+    if (collapseBtn) {
+      collapseBtn.setAttribute('aria-expanded', String(!sidebar.classList.contains('collapsed')));
+    }
+
+    applySidebarState();
+  }
+
+  document.addEventListener('DOMContentLoaded', initializeSidebar);
+  document.addEventListener('turbo:load', initializeSidebar);
+  document.addEventListener('turbo:render', initializeSidebar);
+</script>
   
 <div id="notificationContainer" style="position: fixed; top: 80px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; max-width: 380px;"></div>
 
 <script>
-  window.showNotification = function(message, type = 'success', duration = 3000) {
-    console.log('Notification called:', message);
-    
+  window.showNotification = function(message, type = 'success', duration = 2000) {
     const container = document.getElementById('notificationContainer');
     if (!container) {
       alert(message);
       return;
     }
-    
+
+    const normalizedType = String(type || 'success').toLowerCase();
+    const palette = {
+      success: { border: '#5c7d4c', background: 'rgba(107,143,90,0.14)', color: '#5c7d4c', icon: '✓' },
+      error: { border: '#b25c4a', background: 'rgba(178,92,74,0.14)', color: '#b25c4a', icon: '✕' },
+      fail: { border: '#b25c4a', background: 'rgba(178,92,74,0.14)', color: '#b25c4a', icon: '✕' },
+      warning: { border: '#c08a2b', background: 'rgba(192,138,43,0.14)', color: '#c08a2b', icon: '!' },
+      info: { border: '#4a6d97', background: 'rgba(74,109,151,0.14)', color: '#4a6d97', icon: 'i' }
+    };
+    const theme = palette[normalizedType] || palette.info;
+
     const notification = document.createElement('div');
-    const isSuccess = type === 'success';
     notification.style.cssText = `
       background: #f6f3ec;
       border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-      border-left: 4px solid ${isSuccess ? '#5c7d4c' : '#b25c4a'};
+      border-left: 4px solid ${theme.border};
       overflow: hidden;
       animation: slideIn 0.3s ease;
       min-width: 280px;
     `;
     notification.innerHTML = `
       <div style="display: flex; align-items: center; padding: 14px 18px; gap: 12px;">
-        <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: 700; flex-shrink: 0; background: ${isSuccess ? 'rgba(107,143,90,0.14)' : 'rgba(178,92,74,0.14)'}; color: ${isSuccess ? '#5c7d4c' : '#b25c4a'};">
-          ${isSuccess ? '✓' : '✕'}
+        <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: 700; flex-shrink: 0; background: ${theme.background}; color: ${theme.color};">
+          ${theme.icon}
         </span>
         <span style="flex: 1; font-size: 0.9rem; font-weight: 500; color: #1b1d24;">${message}</span>
         <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 20px; color: #8b8d97; cursor: pointer; padding: 0 4px;">×</button>
       </div>
     `;
-    
+
     container.appendChild(notification);
-    
-    // Add animation style if not exists
+
     if (!document.getElementById('notification-style')) {
       const style = document.createElement('style');
       style.id = 'notification-style';
@@ -193,7 +284,7 @@
       `;
       document.head.appendChild(style);
     }
-    
+
     setTimeout(() => {
       if (notification.parentElement) {
         notification.style.transition = 'all 0.3s ease';
