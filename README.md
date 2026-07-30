@@ -73,21 +73,6 @@ MIT
 
 ## 👤 Author
 
-[Your Name]
-[GitHub Link]
-=======
-
-📌 Progress
-□ Authentication
-□ Role-based access
-□ Product CRUD
-□ Stock management
-□ Order processing
-□ Reporting
-📄 License
-MIT
-
-👤 Author
 Muhammad Ali
-https://github.com/ali38958/Crib-on-Rails
->>>>>>> 326510aaeab2264f020a9e27801a433341abf32f
+[\[GitHub Link\]](https://github.com/ali38958/Crib-on-Rails)
+=======
