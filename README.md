@@ -1,24 +1,57 @@
-# README
+# Inventory Management System
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+A role-based inventory management system built with Ruby on Rails. Currently under development as a personal project.
 
-Things you may want to cover:
+## 🚧 Status
 
-* Ruby version
+Under active development - personal learning project.
 
-* System dependencies
+## 👥 Roles
 
-* Configuration
+- **Admin** - Full system control
+- **Stock Manager** - Manage inventory and stock
+- **Order Receiver** - Process incoming orders
 
-* Database creation
+## 🛠️ Tech Stack
 
-* Database initialization
+- Ruby on Rails
+- SQLite3
+- HTML / CSS / Vanilla JS
 
-* How to run the test suite
+## ✨ Planned Features
 
-* Services (job queues, cache servers, search engines, etc.)
+- Authentication & authorization
+- Product management (CRUD)
+- Stock level tracking
+- Order processing
+- Supplier management
+- Inventory reports
 
-* Deployment instructions
+## 🚀 Setup
 
-* ...
+bundle install
+rails db:create db:migrate db:seed
+rails server
+Visit http://localhost:3000
+
+📁 Structure
+text
+app/
+├── controllers/
+├── models/
+├── views/
+└── ...
+
+📌 Progress
+□ Authentication
+□ Role-based access
+□ Product CRUD
+□ Stock management
+□ Order processing
+□ Reporting
+📄 License
+MIT
+
+👤 Author
+Muhammad Ali
+https://github.com/ali38958/Crib-on-Rails
