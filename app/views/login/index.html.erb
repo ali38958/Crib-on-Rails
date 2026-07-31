@@ -98,12 +98,20 @@
         body: JSON.stringify({ identifier, password })
       });
       
-      if (response.redirected) {
-        window.location.href = response.url;
+      const data = await response.json();
+
+      if (data.success && data.redirect) {
+        // Show success notification, then redirect after 1 second
+        window.showNotification('Welcome back! Redirecting...', 'success', 1000);
+        setTimeout(() => {
+          window.location.href = data.redirect;
+        }, 1000);
       } else {
-        const data = await response.json();
+        // Show error notification
+        const message = data.message || 'Login failed';
+        window.showNotification(message, 'error', 2000);
         errorDiv.style.display = 'block';
-        errorDiv.textContent = data.message || 'Login failed';
+        errorDiv.textContent = message;
       }
       
     } catch (error) {

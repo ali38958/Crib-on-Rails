@@ -63,8 +63,8 @@ class LoginController < ApplicationController
         path: '/'
       }
       
-      # Redirect based on role
-      redirect_to "/#{user.class.name.underscore}" and return
+      # Return the redirect URL as JSON so the frontend can show a notification before redirecting
+      render json: { success: true, redirect: "/#{user.class.name.underscore}" } and return
     else
       render json: { success: false, message: "Login failed" }, status: :unauthorized
     end
