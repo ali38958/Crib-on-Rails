@@ -2,37 +2,43 @@ class StockManager::ProductsController < StockManager::BaseController
   before_action :set_product, only: [:edit, :update]
   
   def index
-    # Start with base query
-    @products = Product.includes(:category).order(created_at: :desc)
-    
-    # Search filter - uses LIKE (SQLite's LIKE is case-insensitive by default for ASCII)
-    if params[:search].present?
-      search_term = "%#{params[:search]}%"
-      @products = @products.where(
-        "products.name LIKE ? OR categories.name LIKE ?", 
-        search_term, 
-        search_term
-      ).references(:categories)
+    @products = Product.includes(:category).all
+
+    @total_products = Product.count
+    @low_stock = Product.where("quantity < 10 AND quantity > 0").count
+    @out_of_stock = Product.where(quantity: 0).count
+    @total_purchases = Purchase.count
+    @recent_purchases = Purchase.includes(:product, :supplier).order(created_at: :desc).limit(5)
+
+    if params[:filter] == 'low'
+      @products = @products.low_stock
+      @filter_label = 'Low Stock'
+    elsif params[:filter] == 'out'
+      @products = @products.out_of_stock
+      @filter_label = 'Out of Stock'
+    elsif params[:filter] == 'in'
+      @products = @products.in_stock
+      @filter_label = 'In Stock'
+    else
+      @filter_label = 'All Products'
     end
-    
-    # Category filter
+
+    if params[:search].present?
+      @products = @products.search(params[:search])
+    end
+
     if params[:category_id].present?
       @products = @products.where(category_id: params[:category_id])
     end
-    
-    # Get all categories for filter dropdown
+
     @categories = Category.all
-    
-    # Pagination - smart limit
+
     per_page = params[:per_page].to_i
-    per_page = 50 if per_page > 50   # Max 50
-    per_page = 10 if per_page < 1    # Min 10
-    per_page = 10 if per_page.blank? # Default 10
-    
-    # This only loads the current page, not all records
+    per_page = 50 if per_page > 50
+    per_page = 10 if per_page < 1
+    per_page = 10 if per_page.blank?
+
     @products = @products.page(params[:page]).per(per_page)
-    
-    # Count total matching records (efficient COUNT query)
     @total_count = @products.total_count
   end
   

@@ -8,8 +8,11 @@ class Supplier < ApplicationRecord
   
   scope :search, ->(query) {
     if query.present?
-      where("name ILIKE ? OR phone ILIKE ? OR email ILIKE ? OR contact_person ILIKE ?", 
-            "%#{query}%", "%#{query}%", "%#{query}%", "%#{query}%")
+      pattern = "%#{query}%"
+      where(
+        "LOWER(name) LIKE LOWER(?) OR LOWER(phone) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?) OR LOWER(contact_person) LIKE LOWER(?)",
+        pattern, pattern, pattern, pattern
+      )
     end
   }
 end

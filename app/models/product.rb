@@ -13,6 +13,17 @@ class Product < ApplicationRecord
   
   scope :in_stock, -> { where("quantity > 0") }
   scope :out_of_stock, -> { where(quantity: 0) }
+  scope :low_stock, -> { where("quantity < 10 AND quantity > 0") }
+
+  scope :search, ->(query) {
+    if query.present?
+      pattern = "%#{query}%"
+      joins(:category).where(
+        "LOWER(products.name) LIKE LOWER(?) OR LOWER(categories.name) LIKE LOWER(?)",
+        pattern, pattern
+      )
+    end
+  }
   
   before_update :track_price_change, if: :will_save_change_to_current_price?
   

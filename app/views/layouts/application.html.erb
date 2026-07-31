@@ -10,9 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <%= stylesheet_link_tag "admin/users", "data-turbo-track": "reload" if current_role == 'Admin' %>
-  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-  <%= stylesheet_link_tag "variables", "data-turbo-track": "reload" %>
-  <%= stylesheet_link_tag "layout", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "application" %>
+  <%= stylesheet_link_tag "variables" %>
+  <%= stylesheet_link_tag "layout" %>
   <%= yield :head %>
 </head>
 <body>
@@ -101,129 +101,131 @@
   <% end %>
 
 <script>
-  const STORAGE_KEY = 'sidebarCollapsed';
-  let sidebarEventsBound = false;
+  (function() {
+    var STORAGE_KEY = 'sidebarCollapsed';
+    var sidebarEventsBound = false;
 
-  function getSidebar() {
-    return document.getElementById('sidebar');
-  }
-
-  function getMenuButton() {
-    return document.getElementById('menuBtn');
-  }
-
-  function getCollapseButton() {
-    return document.getElementById('collapseBtn');
-  }
-
-  function getBackdrop() {
-    return document.getElementById('sidebarBackdrop');
-  }
-
-  function isMobile() {
-    return window.innerWidth <= 900;
-  }
-
-  function getSavedSidebarState() {
-    return localStorage.getItem(STORAGE_KEY) === 'true';
-  }
-
-  function saveSidebarState(isCollapsed) {
-    localStorage.setItem(STORAGE_KEY, String(isCollapsed));
-  }
-
-  function applySidebarState() {
-    const sidebar = getSidebar();
-    if (!sidebar) return;
-
-    if (isMobile()) {
-      sidebar.classList.remove('collapsed');
-      sidebar.setAttribute('aria-collapsed', 'false');
-      return;
+    function getSidebar() {
+      return document.getElementById('sidebar');
     }
 
-    const shouldCollapse = getSavedSidebarState();
-    sidebar.classList.toggle('collapsed', shouldCollapse);
-    sidebar.setAttribute('aria-collapsed', String(shouldCollapse));
-
-    const collapseBtn = getCollapseButton();
-    if (collapseBtn) {
-      collapseBtn.setAttribute('aria-expanded', String(!shouldCollapse));
+    function getMenuButton() {
+      return document.getElementById('menuBtn');
     }
-  }
 
-  function toggleSidebar() {
-    const sidebar = getSidebar();
-    const collapseBtn = getCollapseButton();
-    if (!sidebar) return;
+    function getCollapseButton() {
+      return document.getElementById('collapseBtn');
+    }
 
-    if (isMobile()) {
-      const backdrop = getBackdrop();
-      sidebar.classList.toggle('mobile-open');
-      if (backdrop) {
-        backdrop.classList.toggle('visible');
+    function getBackdrop() {
+      return document.getElementById('sidebarBackdrop');
+    }
+
+    function isMobile() {
+      return window.innerWidth <= 900;
+    }
+
+    function getSavedSidebarState() {
+      return localStorage.getItem(STORAGE_KEY) === 'true';
+    }
+
+    function saveSidebarState(isCollapsed) {
+      localStorage.setItem(STORAGE_KEY, String(isCollapsed));
+    }
+
+    function applySidebarState() {
+      var sidebar = getSidebar();
+      if (!sidebar) return;
+
+      if (isMobile()) {
+        sidebar.classList.remove('collapsed');
+        sidebar.setAttribute('aria-collapsed', 'false');
+        return;
       }
-      return;
+
+      var shouldCollapse = getSavedSidebarState();
+      sidebar.classList.toggle('collapsed', shouldCollapse);
+      sidebar.setAttribute('aria-collapsed', String(shouldCollapse));
+
+      var collapseBtn = getCollapseButton();
+      if (collapseBtn) {
+        collapseBtn.setAttribute('aria-expanded', String(!shouldCollapse));
+      }
     }
 
-    const nextCollapsed = !sidebar.classList.contains('collapsed');
-    sidebar.classList.toggle('collapsed', nextCollapsed);
-    sidebar.setAttribute('aria-collapsed', String(nextCollapsed));
-    saveSidebarState(nextCollapsed);
+    function toggleSidebar() {
+      var sidebar = getSidebar();
+      var collapseBtn = getCollapseButton();
+      if (!sidebar) return;
 
-    if (collapseBtn) {
-      collapseBtn.setAttribute('aria-expanded', String(!nextCollapsed));
-    }
-  }
+      if (isMobile()) {
+        var backdrop = getBackdrop();
+        sidebar.classList.toggle('mobile-open');
+        if (backdrop) {
+          backdrop.classList.toggle('visible');
+        }
+        return;
+      }
 
-  function handleSidebarClick(event) {
-    const collapseBtn = event.target.closest('#collapseBtn');
-    if (collapseBtn) {
-      event.preventDefault();
-      toggleSidebar();
-      return;
-    }
+      var nextCollapsed = !sidebar.classList.contains('collapsed');
+      sidebar.classList.toggle('collapsed', nextCollapsed);
+      sidebar.setAttribute('aria-collapsed', String(nextCollapsed));
+      saveSidebarState(nextCollapsed);
 
-    const menuBtn = event.target.closest('#menuBtn');
-    if (menuBtn && isMobile()) {
-      const sidebar = getSidebar();
-      const backdrop = getBackdrop();
-      sidebar?.classList.toggle('mobile-open');
-      backdrop?.classList.toggle('visible');
-      return;
+      if (collapseBtn) {
+        collapseBtn.setAttribute('aria-expanded', String(!nextCollapsed));
+      }
     }
 
-    const backdrop = getBackdrop();
-    if (backdrop && event.target === backdrop) {
-      const sidebar = getSidebar();
-      sidebar?.classList.remove('mobile-open');
-      backdrop.classList.remove('visible');
+    function handleSidebarClick(event) {
+      var collapseBtn = event.target.closest('#collapseBtn');
+      if (collapseBtn) {
+        event.preventDefault();
+        toggleSidebar();
+        return;
+      }
+
+      var menuBtn = event.target.closest('#menuBtn');
+      if (menuBtn && isMobile()) {
+        var sidebar = getSidebar();
+        var backdrop = getBackdrop();
+        if (sidebar) sidebar.classList.toggle('mobile-open');
+        if (backdrop) backdrop.classList.toggle('visible');
+        return;
+      }
+
+      var backdrop = getBackdrop();
+      if (backdrop && event.target === backdrop) {
+        var sidebar = getSidebar();
+        if (sidebar) sidebar.classList.remove('mobile-open');
+        backdrop.classList.remove('visible');
+      }
     }
-  }
 
-  function initializeSidebar() {
-    const sidebar = getSidebar();
-    if (!sidebar) return;
+    function initializeSidebar() {
+      var sidebar = getSidebar();
+      if (!sidebar) return;
 
-    if (!sidebarEventsBound) {
-      document.addEventListener('click', handleSidebarClick);
-      window.addEventListener('resize', applySidebarState);
-      document.addEventListener('turbo:load', applySidebarState);
-      document.addEventListener('turbo:render', applySidebarState);
-      sidebarEventsBound = true;
+      if (!sidebarEventsBound) {
+        document.addEventListener('click', handleSidebarClick);
+        window.addEventListener('resize', applySidebarState);
+        document.addEventListener('turbo:load', applySidebarState);
+        document.addEventListener('turbo:render', applySidebarState);
+        sidebarEventsBound = true;
+      }
+
+      var collapseBtn = getCollapseButton();
+      if (collapseBtn) {
+        collapseBtn.setAttribute('aria-expanded', String(!sidebar.classList.contains('collapsed')));
+      }
+
+      applySidebarState();
     }
 
-    const collapseBtn = getCollapseButton();
-    if (collapseBtn) {
-      collapseBtn.setAttribute('aria-expanded', String(!sidebar.classList.contains('collapsed')));
-    }
-
-    applySidebarState();
-  }
-
-  document.addEventListener('DOMContentLoaded', initializeSidebar);
-  document.addEventListener('turbo:load', initializeSidebar);
-  document.addEventListener('turbo:render', initializeSidebar);
+    document.addEventListener('DOMContentLoaded', initializeSidebar);
+    document.addEventListener('turbo:load', initializeSidebar);
+    document.addEventListener('turbo:render', initializeSidebar);
+  })();
 </script>
   
 <div id="notificationContainer" style="position: fixed; top: 80px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; max-width: 380px;"></div>

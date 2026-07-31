@@ -15,8 +15,11 @@ class Purchase < ApplicationRecord
   
   scope :search, ->(query) {
     if query.present?
-      joins(:supplier).where("suppliers.name ILIKE ? OR purchases.id::text ILIKE ?", 
-                             "%#{query}%", "%#{query}%")
+      pattern = "%#{query}%"
+      joins(:supplier).where(
+        "LOWER(suppliers.name) LIKE LOWER(?) OR CAST(purchases.id AS TEXT) LIKE LOWER(?)",
+        pattern, pattern
+      )
     end
   }
   

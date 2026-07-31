@@ -131,6 +131,28 @@ tbody tr:hover {
   color: #a8523f;
 }
 
+.clickable-row {
+  cursor: pointer;
+  display: table-row;
+}
+
+.clickable-row:hover {
+  background: rgba(199, 154, 86, 0.1) !important;
+}
+
+/* Stat links - only add this if you want hover effect */
+.stat-link {
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-link:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border-color: var(--brass);
+}
+
 @media (max-width: 900px) {
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);

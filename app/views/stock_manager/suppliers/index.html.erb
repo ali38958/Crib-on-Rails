@@ -447,31 +447,52 @@
 
   // Debounced search
   let searchTimeout;
-  document.addEventListener('DOMContentLoaded', function() {
+
+  function initializeSuppliersFilters() {
     const supplierSearch = document.getElementById('supplierSearch');
     const purchaseSearch = document.getElementById('purchaseSearch');
 
+    const applySearch = (input, paramName, pageParam) => {
+      clearTimeout(searchTimeout);
+      const value = input.value.trim();
+
+      searchTimeout = setTimeout(() => {
+        const url = new URL(window.location.href);
+        if (value) {
+          url.searchParams.set(paramName, value);
+        } else {
+          url.searchParams.delete(paramName);
+        }
+        url.searchParams.set(pageParam, 1);
+        window.location.href = url.toString();
+      }, 400);
+    };
+
     if (supplierSearch) {
       supplierSearch.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-          const url = new URL(window.location.href);
-          url.searchParams.set('supplier_search', this.value);
-          url.searchParams.set('supplier_page', 1);
-          window.location.href = url.toString();
-        }, 500);
+        applySearch(this, 'supplier_search', 'supplier_page');
+      });
+
+      supplierSearch.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(searchTimeout);
+          applySearch(this, 'supplier_search', 'supplier_page');
+        }
       });
     }
 
     if (purchaseSearch) {
       purchaseSearch.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-          const url = new URL(window.location.href);
-          url.searchParams.set('purchase_search', this.value);
-          url.searchParams.set('purchase_page', 1);
-          window.location.href = url.toString();
-        }, 500);
+        applySearch(this, 'purchase_search', 'purchase_page');
+      });
+
+      purchaseSearch.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(searchTimeout);
+          applySearch(this, 'purchase_search', 'purchase_page');
+        }
       });
     }
 
@@ -510,5 +531,8 @@
       url.searchParams.set('purchase_page', 1);
       window.location.href = url.toString();
     });
-  });
+  }
+
+  document.addEventListener('DOMContentLoaded', initializeSuppliersFilters);
+  document.addEventListener('turbo:load', initializeSuppliersFilters);
 </script>
