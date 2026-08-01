@@ -1,0 +1,52 @@
+<%= stylesheet_link_tag "order_receiver/customers" %>
+
+<div class="modal-overlay" id="customerModal">
+  <div class="modal-content" style="max-width: 450px;">
+    <div class="modal-header">
+      <h2><%= action == 'new' ? "Add Customer" : "Edit Customer" %></h2>
+      <button type="button" class="modal-close" id="customerModalCloseBtn" data-close-customer-modal="customerModal">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <% if @customer.errors.any? %>
+        <div class="error-messages">
+          <ul>
+            <% @customer.errors.full_messages.each do |msg| %>
+              <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+      
+      <form id="customerForm" method="post" action="<%= action == 'new' ? order_receiver_customers_path : order_receiver_customer_path(@customer) %>" data-turbo="false">
+        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+        <input type="hidden" name="_method" value="<%= action == 'new' ? 'post' : 'patch' %>">
+        
+        <div class="form-group">
+          <label for="customer_name">Name *</label>
+          <input type="text" name="customer[name]" id="customer_name" required value="<%= @customer.name %>" class="customer-input">
+        </div>
+        
+        <div class="form-group">
+          <label for="customer_phone">Phone *</label>
+          <input type="text" name="customer[phone]" id="customer_phone" required value="<%= @customer.phone %>" class="customer-input">
+        </div>
+        
+        <div class="form-group">
+          <label for="customer_email">Email</label>
+          <input type="email" name="customer[email]" id="customer_email" value="<%= @customer.email %>" class="customer-input">
+        </div>
+        
+        <div class="form-group">
+          <label for="customer_location">Location</label>
+          <input type="text" name="customer[location]" id="customer_location" value="<%= @customer.location %>" class="customer-input">
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="customerSubmitBtn"><%= action == 'new' ? "Create Customer" : "Update Customer" %></button>
+          <button type="button" class="btn btn-secondary" id="customerModalCancelBtn" data-close-customer-modal="customerModal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
