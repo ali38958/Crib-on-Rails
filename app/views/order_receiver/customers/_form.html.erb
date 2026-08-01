@@ -50,3 +50,105 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function() {
+    function initForm() {
+      const form = document.getElementById('customerForm');
+      if (!form) return;
+
+      form.removeEventListener('submit', handleSubmit);
+      form.addEventListener('submit', handleSubmit);
+    }
+
+    function handleSubmit(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const form = e.target;
+      const submitBtn = document.getElementById('customerSubmitBtn');
+      const modal = document.getElementById('customerModal');
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+      }
+
+      const formData = new FormData(form);
+      const methodInput = form.querySelector('input[name="_method"]');
+      const method = (methodInput && methodInput.value) ? methodInput.value : 'POST';
+
+      fetch(form.action, {
+        method: method,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'text/html'
+        },
+        body: formData
+      })
+      .then(async function(response) {
+        if (response.redirected && response.url) {
+          window.location.assign(response.url);
+          return { redirected: true };
+        }
+
+        if (response.ok) {
+          return { ok: true, html: await response.text() };
+        }
+
+        return { ok: false, html: await response.text(), status: response.status };
+      })
+      .then(function(result) {
+        if (result && result.redirected) {
+          return;
+        }
+
+        if (result && result.ok) {
+          if (modal) {
+            modal.remove();
+          }
+          document.body.style.overflow = 'auto';
+          return;
+        }
+
+        if (result && result.html && modal) {
+          modal.innerHTML = result.html;
+          setTimeout(initForm, 100);
+          if (typeof window.showNotification === 'function') {
+            window.showNotification('Please fix the form and try again.', 'error');
+          }
+        }
+      })
+      .catch(function(error) {
+        console.error('Error:', error);
+        if (typeof window.showNotification === 'function') {
+          window.showNotification('Something went wrong. Please try again.', 'error');
+        }
+      })
+      .finally(function() {
+        if (submitBtn && !document.getElementById('customerModal')) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Try Again';
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initForm);
+    } else {
+      initForm();
+    }
+
+    document.addEventListener('turbo:load', initForm);
+
+    window.closeCustomerModal = function(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.remove();
+      }
+      if (!document.querySelector('.modal-overlay')) {
+        document.body.style.overflow = 'auto';
+      }
+    };
+  })();
+</script>

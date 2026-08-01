@@ -1,0 +1,47 @@
+<div class="panel-card">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Email</th>
+        <th>Location</th>
+        <th>Orders</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @customers.any? %>
+        <% @customers.each do |customer| %>
+          <tr>
+            <td><strong><%= customer.name %></strong></td>
+            <td><%= customer.phone %></td>
+            <td><%= customer.email || '-' %></td>
+            <td><%= customer.location || '-' %></td>
+            <td><%= customer.orders.count %></td>
+            <td>
+              <button onclick="editCustomer('<%= customer.id %>')" class="btn-edit">Edit</button>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 40px; color: var(--muted-2);">
+            No customers found
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+<% if @customers.total_pages > 1 %>
+  <div class="pagination-container">
+    <%= paginate @customers, 
+        param_name: :page,
+        window: 2,
+        outer_window: 1,
+        params: params.permit(:search, :per_page) %>
+  </div>
+<% end %>

@@ -1,5 +1,7 @@
 class Order < ApplicationRecord
   belongs_to :customer
+  belongs_to :created_by, class_name: "OrderReceiver", optional: true
+  belongs_to :updated_by, class_name: "OrderReceiver", optional: true
   has_many :order_items
   has_many :products, through: :order_items
   
@@ -13,6 +15,7 @@ class Order < ApplicationRecord
   }
   
   validates :total_price, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+  validates :price_paid, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   
   scope :recent, -> { order(created_at: :desc).limit(10) }
   scope :pending_orders, -> { where(status: [:pending, :confirmed]) }
@@ -21,11 +24,16 @@ class Order < ApplicationRecord
     order_items.sum('quantity * price_per_unit')
   end
   
-  before_save :calculate_total
+  before_save :calculate_total, if: -> { total_price.nil? }
+  before_save :set_updated_by, if: -> { updated_by_id_changed? }
   
   private
   
   def calculate_total
-    self.total_price = subtotal if total_price.nil?
+    self.total_price = subtotal
+  end
+  
+  def set_updated_by
+    # This will be set in controller, but we can auto-set if needed
   end
 end

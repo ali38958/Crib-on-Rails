@@ -238,6 +238,13 @@
   
 <div id="notificationContainer" style="position: fixed; top: 80px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; max-width: 380px;"></div>
 
+<% unless request.headers['X-Requested-With'] == 'XMLHttpRequest' %>
+  <% flash.each do |type, message| %>
+    <% next if message.blank? %>
+    <div class="flash-message" data-flash-type="<%= type %>" data-flash-message="<%= message %>" style="display: none;"></div>
+  <% end %>
+<% end %>
+
 <script>
   window.showNotification = function(message, type = 'success', duration = 2000) {
     const container = document.getElementById('notificationContainer');
@@ -303,6 +310,36 @@
       }
     }, duration);
   };
+
+  let flashNotificationsRendered = false;
+
+  function renderFlashNotifications() {
+    if (flashNotificationsRendered) return;
+
+    const flashElements = document.querySelectorAll('.flash-message');
+    if (!flashElements.length || typeof window.showNotification !== 'function') {
+      flashNotificationsRendered = true;
+      return;
+    }
+
+    flashElements.forEach(function(element) {
+      const message = element.getAttribute('data-flash-message');
+      const type = element.getAttribute('data-flash-type');
+      if (!message) return;
+
+      const normalizedType = String(type || 'notice').toLowerCase();
+      const displayType = normalizedType === 'alert' || normalizedType === 'error' ? 'error' : 'success';
+      window.showNotification(message, displayType, 2500);
+    });
+
+    flashNotificationsRendered = true;
+  }
+
+  document.addEventListener('DOMContentLoaded', renderFlashNotifications);
+  document.addEventListener('turbo:load', renderFlashNotifications);
+  document.addEventListener('turbo:before-render', function() {
+    flashNotificationsRendered = false;
+  });
 </script>
 </body>
 </html>

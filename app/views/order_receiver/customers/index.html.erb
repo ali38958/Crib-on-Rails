@@ -34,63 +34,20 @@
   </div>
   
   <div class="filters-right">
-    <span class="results-count"><%= @total_count %> customers found</span>
+    <span class="results-count"><span id="totalCount"><%= @total_count %></span> customers found</span>
   </div>
 </div>
 
 <!-- Customers Table -->
-<div class="panel-card">
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Phone</th>
-        <th>Email</th>
-        <th>Location</th>
-        <th>Orders</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% if @customers.any? %>
-        <% @customers.each do |customer| %>
-          <tr>
-            <td><strong><%= customer.name %></strong></td>
-            <td><%= customer.phone %></td>
-            <td><%= customer.email || '-' %></td>
-            <td><%= customer.location || '-' %></td>
-            <td><%= customer.orders.count %></td>
-            <td>
-              <button onclick="editCustomer('<%= customer.id %>')" class="btn-edit">Edit</button>
-            </td>
-          </tr>
-        <% end %>
-      <% else %>
-        <tr>
-          <td colspan="6" style="text-align: center; padding: 40px; color: var(--muted-2);">
-            No customers found
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+<div id="customersTable">
+  <%= render 'table' %>
 </div>
-
-<!-- Pagination -->
-<% if @customers.total_pages > 1 %>
-  <div class="pagination-container">
-    <%= paginate @customers, 
-        param_name: :page,
-        window: 2,
-        outer_window: 1,
-        params: params.permit(:search, :per_page) %>
-  </div>
-<% end %>
 
 <!-- Modal Container -->
 <div id="customerModalContainer"></div>
 
 <script>
+  // Modal close functions
   function closeCustomerModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -100,167 +57,6 @@
       document.body.style.overflow = 'auto';
     }
   }
-
-  function openCustomerModal(id = null) {
-    const container = document.getElementById('customerModalContainer');
-    if (!container) return;
-
-    container.innerHTML = '';
-    const url = id ? '/order_receiver/customers/' + id + '/edit' : '/order_receiver/customers/new';
-
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(response => response.text())
-      .then(html => {
-        container.innerHTML = html;
-        if (typeof window.initCustomerModalForms === 'function') {
-          window.initCustomerModalForms(container);
-        }
-        document.body.style.overflow = 'hidden';
-      });
-  }
-
-  function editCustomer(id) { openCustomerModal(id); }
-
-  window.initCustomerModalForms = function(root = document) {
-    const forms = (root || document).querySelectorAll('#customerForm');
-
-    forms.forEach(function(form) {
-      if (form.dataset.customerInitialized === 'true') return;
-      form.dataset.customerInitialized = 'true';
-
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const submitBtn = form.querySelector('#customerSubmitBtn');
-        const modal = form.closest('.modal-overlay');
-        const methodInput = form.querySelector('input[name="_method"]');
-        const method = (methodInput && methodInput.value ? methodInput.value : (form.getAttribute('method') || 'POST')).toUpperCase();
-
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Processing...';
-        }
-
-        const formData = new FormData(form);
-
-        fetch(form.action, {
-          method: method,
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-          },
-          body: formData
-        })
-          .then(async function(response) {
-            const contentType = response.headers.get('content-type') || '';
-            if (contentType.includes('application/json')) {
-              return { ok: response.ok, json: await response.json() };
-            }
-            if (response.ok) {
-              return { ok: true, html: await response.text() };
-            }
-            return { ok: false, html: await response.text() };
-          })
-          .then(function(result) {
-            if (result.ok && result.json && result.json.success) {
-              if (typeof window.showNotification === 'function') {
-                window.showNotification(result.json.message || 'Customer saved successfully!', result.json.type || 'success', 2200);
-              }
-
-              if (modal) {
-                modal.remove();
-              }
-              document.body.style.overflow = 'auto';
-
-              setTimeout(function() {
-                window.location.reload();
-              }, 2200);
-              return;
-            }
-
-            if (result.json && !result.ok) {
-              if (typeof window.showNotification === 'function') {
-                window.showNotification(result.json.message || 'Please fix the form and try again.', result.json.type || 'error', 2200);
-              }
-            } else if (result.html && modal) {
-              modal.innerHTML = result.html;
-              if (typeof window.initCustomerModalForms === 'function') {
-                window.initCustomerModalForms(modal);
-              }
-              if (typeof window.showNotification === 'function') {
-                window.showNotification('Please fix the form and try again.', 'error', 2200);
-              }
-            }
-
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Try Again';
-            }
-          })
-          .catch(function() {
-            if (typeof window.showNotification === 'function') {
-              window.showNotification('Something went wrong. Please try again.', 'error', 2200);
-            }
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Try Again';
-            }
-          });
-      });
-    });
-  };
-
-  document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    const perPageSelect = document.getElementById('perPageSelect');
-    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
-
-    function buildUrl(params) {
-      const url = new URL(window.location.href);
-      Object.keys(params).forEach(key => {
-        if (params[key] && params[key] !== '') {
-          url.searchParams.set(key, params[key]);
-        } else {
-          url.searchParams.delete(key);
-        }
-      });
-      url.searchParams.set('page', 1);
-      return url.toString();
-    }
-
-    let searchTimeout;
-    if (searchInput) {
-      searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-          window.location.href = buildUrl({
-            search: this.value,
-            per_page: perPageSelect.value
-          });
-        }, 500);
-      });
-    }
-
-    if (perPageSelect) {
-      perPageSelect.addEventListener('change', function() {
-        window.location.href = buildUrl({
-          search: searchInput.value,
-          per_page: this.value
-        });
-      });
-    }
-
-    if (clearFiltersBtn) {
-      clearFiltersBtn.addEventListener('click', function() {
-        window.location.href = window.location.pathname;
-      });
-    }
-
-    if (typeof window.initCustomerModalForms === 'function') {
-      window.initCustomerModalForms(document);
-    }
-  });
 
   document.addEventListener('click', function(e) {
     const closeTrigger = e.target.closest('[data-close-customer-modal]');
@@ -283,5 +79,117 @@
         closeCustomerModal(activeModal.id);
       }
     }
+  });
+
+  // Customer functions
+  function openCustomerModal(id = null) {
+    const container = document.getElementById('customerModalContainer');
+    container.innerHTML = '';
+    let url = id ? '/order_receiver/customers/' + id + '/edit' : '/order_receiver/customers/new';
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(response => response.text())
+      .then(html => {
+        container.innerHTML = html;
+        document.body.style.overflow = 'hidden';
+      });
+  }
+
+  function editCustomer(id) { openCustomerModal(id); }
+
+  // Search and filter functions
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const perPageSelect = document.getElementById('perPageSelect');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    const tableContainer = document.getElementById('customersTable');
+    
+    // Focus search input if there's a value
+    if (searchInput && searchInput.value) {
+      searchInput.focus();
+      searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+    }
+    
+    function fetchCustomers() {
+      const params = new URLSearchParams();
+      if (searchInput && searchInput.value) params.set('search', searchInput.value);
+      if (perPageSelect) params.set('per_page', perPageSelect.value);
+      params.set('page', 1);
+      
+      const url = window.location.pathname + '?' + params.toString();
+      
+      window.history.pushState({}, '', url);
+      
+      fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(response => response.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newTable = doc.getElementById('customersTable');
+        if (newTable) {
+          tableContainer.innerHTML = newTable.innerHTML;
+        }
+        const newCount = doc.getElementById('totalCount');
+        if (newCount) {
+          document.getElementById('totalCount').textContent = newCount.textContent;
+        }
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+      })
+      .catch(error => console.error('Error:', error));
+    }
+    
+    let searchTimeout;
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(fetchCustomers, 400);
+      });
+    }
+    
+    if (perPageSelect) {
+      perPageSelect.addEventListener('change', fetchCustomers);
+    }
+    
+    if (clearFiltersBtn) {
+      clearFiltersBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        fetchCustomers();
+      });
+    }
+    
+    document.addEventListener('click', function(e) {
+      const paginationLink = e.target.closest('.pagination a');
+      if (paginationLink) {
+        e.preventDefault();
+        const url = paginationLink.href;
+        window.history.pushState({}, '', url);
+        
+        fetch(url, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const newTable = doc.getElementById('customersTable');
+          if (newTable) {
+            tableContainer.innerHTML = newTable.innerHTML;
+          }
+          const newCount = doc.getElementById('totalCount');
+          if (newCount) {
+            document.getElementById('totalCount').textContent = newCount.textContent;
+          }
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+          }
+        })
+        .catch(error => console.error('Error:', error));
+      }
+    });
   });
 </script>

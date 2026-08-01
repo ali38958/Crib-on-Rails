@@ -6,7 +6,7 @@ class OrderReceiver::CustomersController < OrderReceiver::BaseController
     if params[:search].present?
       search_term = "%#{params[:search]}%"
       @customers = @customers.where(
-        "name ILIKE ? OR phone ILIKE ? OR email ILIKE ?",
+        "LOWER(name) LIKE LOWER(?) OR LOWER(phone) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?)",
         search_term, search_term, search_term
       )
     end
@@ -19,6 +19,11 @@ class OrderReceiver::CustomersController < OrderReceiver::BaseController
     
     @customers = @customers.page(params[:page]).per(per_page)
     @total_count = @customers.total_count
+    
+    respond_to do |format|
+      format.html { render :index }
+      format.js { render partial: 'table', layout: false }
+    end
   end
   
   def new
@@ -28,15 +33,17 @@ class OrderReceiver::CustomersController < OrderReceiver::BaseController
   
   def create
     @customer = Customer.new(customer_params)
-
+    
     if @customer.save
-      render json: { success: true, message: "Customer created successfully!", type: "success", customer: @customer }
+      respond_to do |format|
+        format.html { redirect_to order_receiver_customers_path, notice: "Customer created successfully!" }
+        format.json { render json: { success: true, message: "Customer created successfully!", customer: @customer } }
+      end
     else
-      render json: {
-        success: false,
-        message: @customer.errors.full_messages.join(', '),
-        type: "error"
-      }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html { render partial: 'form', locals: { action: 'new' }, status: :unprocessable_entity, layout: false }
+        format.json { render json: { success: false, message: @customer.errors.full_messages.join(', ') }, status: :unprocessable_entity }
+      end
     end
   end
   
@@ -47,15 +54,17 @@ class OrderReceiver::CustomersController < OrderReceiver::BaseController
   
   def update
     @customer = Customer.find(params[:id])
-
+    
     if @customer.update(customer_params)
-      render json: { success: true, message: "Customer updated successfully!", type: "success", customer: @customer }
+      respond_to do |format|
+        format.html { redirect_to order_receiver_customers_path, notice: "Customer updated successfully!" }
+        format.json { render json: { success: true, message: "Customer updated successfully!", customer: @customer } }
+      end
     else
-      render json: {
-        success: false,
-        message: @customer.errors.full_messages.join(', '),
-        type: "error"
-      }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html { render partial: 'form', locals: { action: 'edit' }, status: :unprocessable_entity, layout: false }
+        format.json { render json: { success: false, message: @customer.errors.full_messages.join(', ') }, status: :unprocessable_entity }
+      end
     end
   end
   
