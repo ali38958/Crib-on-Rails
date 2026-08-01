@@ -13,6 +13,32 @@ class Order < ApplicationRecord
     shipped: 4,
     delivered: 5
   }
+
+  # Add after the enum definition
+
+  STATUS_TRANSITIONS = {
+    'pending' => ['confirmed', 'cancelled'],
+    'confirmed' => ['processing', 'cancelled'],
+    'processing' => ['shipped', 'cancelled'],
+    'shipped' => ['delivered'],
+    'delivered' => [],
+    'cancelled' => []
+  }
+
+  def can_transition_to?(new_status)
+    return false if new_status.blank?
+    return true if status == new_status
+    
+    STATUS_TRANSITIONS[status]&.include?(new_status)
+  end
+
+  def status_transition_allowed?(new_status)
+    can_transition_to?(new_status)
+  end
+
+  def completed?
+    delivered? || cancelled?
+  end
   
   validates :total_price, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :price_paid, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true

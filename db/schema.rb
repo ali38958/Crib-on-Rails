@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_27_175411) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_01_140648) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -92,14 +92,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_27_175411) do
 
   create_table "orders", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "created_by_id"
     t.integer "customer_id"
     t.decimal "price_paid", precision: 10, scale: 2
     t.integer "status", default: 0
     t.decimal "total_price", precision: 10, scale: 2
     t.datetime "updated_at", null: false
+    t.integer "updated_by_id"
     t.index ["created_at"], name: "index_orders_on_created_at"
+    t.index ["created_by_id"], name: "index_orders_on_created_by_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["status"], name: "index_orders_on_status"
+    t.index ["updated_by_id"], name: "index_orders_on_updated_by_id"
   end
 
   create_table "price_changes", force: :cascade do |t|
@@ -163,8 +167,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_27_175411) do
     t.index ["email"], name: "index_suppliers_on_email", unique: true
   end
 
-  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "products"
   add_foreign_key "orders", "customers"

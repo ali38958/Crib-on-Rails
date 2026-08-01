@@ -1,0 +1,58 @@
+<div class="panel-card">
+  <table>
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Customer</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Price Paid</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Created By</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @orders.any? %>
+        <% @orders.each do |order| %>
+          <tr>
+            <td><strong>#<%= order.id %></strong></td>
+            <td><%= order.customer&.name || 'N/A' %></td>
+            <td><%= order.order_items.count %></td>
+            <td>$<%= order.total_price %></td>
+            <td><%= order.price_paid.present? ? "$#{order.price_paid}" : '-' %></td>
+            <td>
+              <span class="status-pill <%= order.status %>">
+                <%= order.status.capitalize %>
+              </span>
+            </td>
+            <td><%= order.created_at.strftime("%b %d, %Y") %></td>
+            <td><%= order.created_by&.name || '-' %></td>
+            <td>
+              <button onclick="viewOrder('<%= order.id %>')" class="btn-edit">View</button>
+              <button onclick="editOrder('<%= order.id %>')" class="btn-edit">Edit</button>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 40px; color: var(--muted-2);">
+            No orders found
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+<% if @orders.total_pages > 1 %>
+  <div class="pagination-container">
+    <%= paginate @orders, 
+        param_name: :page,
+        window: 2,
+        outer_window: 1,
+        params: params.permit(:search, :status, :date_from, :date_to, :per_page) %>
+  </div>
+<% end %>

@@ -1,0 +1,150 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "order_receiver/orders" %>
+<% end %>
+
+<div class="page-header">
+  <div>
+    <p class="page-eyebrow">Orders</p>
+    <h1 class="page-title">Manage Orders</h1>
+    <p class="page-sub">View and manage all customer orders.</p>
+  </div>
+  <div class="page-actions">
+    <button onclick="openOrderModal()" class="btn btn-primary">+ Create Order</button>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+  <div class="filters-left">
+    <div class="filter-group">
+      <input type="text" id="searchInput" placeholder="Search orders (ID, Customer)..." value="<%= params[:search] %>" class="filter-input">
+    </div>
+    
+    <div class="filter-group">
+      <select id="statusFilter" class="filter-select">
+        <option value="all" <%= 'selected' if params[:status].blank? || params[:status] == 'all' %>>All Status</option>
+        <option value="pending" <%= 'selected' if params[:status] == 'pending' %>>Pending</option>
+        <option value="confirmed" <%= 'selected' if params[:status] == 'confirmed' %>>Confirmed</option>
+        <option value="processing" <%= 'selected' if params[:status] == 'processing' %>>Processing</option>
+        <option value="shipped" <%= 'selected' if params[:status] == 'shipped' %>>Shipped</option>
+        <option value="delivered" <%= 'selected' if params[:status] == 'delivered' %>>Delivered</option>
+        <option value="cancelled" <%= 'selected' if params[:status] == 'cancelled' %>>Cancelled</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <input type="date" id="dateFrom" class="filter-input" value="<%= params[:date_from] %>" placeholder="From">
+      <span style="margin: 0 4px; color: var(--muted);">to</span>
+      <input type="date" id="dateTo" class="filter-input" value="<%= params[:date_to] %>" placeholder="To">
+    </div>
+    
+    <button id="applyFiltersBtn" class="btn btn-sm btn-primary">Apply</button>
+    <button id="clearFiltersBtn" class="btn btn-sm btn-secondary">Clear</button>
+    
+    <div class="filter-group">
+      <select id="perPageSelect" class="filter-select">
+        <option value="10" <%= 'selected' if params[:per_page].to_i == 10 || params[:per_page].blank? %>>10 per page</option>
+        <option value="25" <%= 'selected' if params[:per_page].to_i == 25 %>>25 per page</option>
+        <option value="50" <%= 'selected' if params[:per_page].to_i == 50 %>>50 per page</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="filters-right">
+    <span class="results-count"><span id="totalCount"><%= @total_count %></span> orders found</span>
+  </div>
+</div>
+
+<!-- Orders Table -->
+<div id="ordersTable">
+  <%= render 'table' %>
+</div>
+
+<!-- Modal Container -->
+<div id="orderModalContainer"></div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const perPageSelect = document.getElementById('perPageSelect');
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    const clearBtn = document.getElementById('clearFiltersBtn');
+    const tableContainer = document.getElementById('ordersTable');
+    
+    function buildUrl(params) {
+      const url = new URL(window.location.href);
+      Object.keys(params).forEach(key => {
+        if (params[key] && params[key] !== '' && params[key] !== 'all') {
+          url.searchParams.set(key, params[key]);
+        } else {
+          url.searchParams.delete(key);
+        }
+      });
+      url.searchParams.set('page', 1);
+      return url.toString();
+    }
+    
+    function applyFilters() {
+      window.location.href = buildUrl({
+        search: searchInput ? searchInput.value : '',
+        status: statusFilter ? statusFilter.value : '',
+        date_from: dateFrom ? dateFrom.value : '',
+        date_to: dateTo ? dateTo.value : '',
+        per_page: perPageSelect ? perPageSelect.value : ''
+      });
+    }
+    
+    // Apply button
+    if (applyBtn) {
+      applyBtn.addEventListener('click', applyFilters);
+    }
+    
+    // Clear filters
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        window.location.href = window.location.pathname;
+      });
+    }
+    
+    // Per page change
+    if (perPageSelect) {
+      perPageSelect.addEventListener('change', applyFilters);
+    }
+    
+    // Status change
+    if (statusFilter) {
+      statusFilter.addEventListener('change', applyFilters);
+    }
+    
+    // Search with debounce
+    let searchTimeout;
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(applyFilters, 500);
+      });
+    }
+  });
+  
+  // Order functions
+  function openOrderModal(id = null) {
+    const container = document.getElementById('orderModalContainer');
+    container.innerHTML = '';
+    let url = id ? '/order_receiver/orders/' + id + '/edit' : '/order_receiver/orders/new';
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(response => response.text())
+      .then(html => {
+        container.innerHTML = html;
+        document.body.style.overflow = 'hidden';
+        if (typeof window.initOrderModalForms === 'function') {
+          window.initOrderModalForms(container);
+        }
+      });
+  }
+  
+  function editOrder(id) { openOrderModal(id); }
+  function viewOrder(id) { openOrderModal(id); }
+</script>

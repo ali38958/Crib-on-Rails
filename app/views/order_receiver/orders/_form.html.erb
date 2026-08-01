@@ -1,0 +1,536 @@
+<%= stylesheet_link_tag "order_receiver/orders" %>
+
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="modal-overlay" id="orderModal">
+  <div class="modal-content" style="max-width: 780px; max-height: 90vh;">
+    <div class="modal-header">
+      <h2><%= action == 'new' ? "Create Order" : "Edit Order ##{@order.id}" %></h2>
+      <button type="button" class="modal-close" id="orderModalCloseBtn" data-close-order-modal="orderModal">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <% if @order.errors.any? %>
+        <div class="error-messages">
+          <ul>
+            <% @order.errors.full_messages.each do |msg| %>
+              <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <!-- ===== Order Form ===== -->
+      <form id="orderForm" method="post" action="<%= action == 'new' ? order_receiver_orders_path : order_receiver_order_path(@order) %>" data-turbo="false">
+        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+        <input type="hidden" name="_method" value="<%= action == 'new' ? 'post' : 'patch' %>">
+
+        <!-- Row: Customer + Location -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="order_customer_id">Customer *</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select name="order[customer_id]" id="order_customer_id" required style="flex: 1; padding: 10px 14px; font-family: 'Manrope', sans-serif; font-size: 0.95rem; color: var(--ink); background: var(--paper-2); border: 1px solid transparent; border-radius: var(--radius); outline: none;">
+                <option value="">Select Customer</option>
+                <% Customer.all.each do |customer| %>
+                  <option value="<%= customer.id %>" <%= 'selected' if @order.customer_id == customer.id %>>
+                    <%= customer.name %> - <%= customer.phone %>
+                  </option>
+                <% end %>
+              </select>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="openCustomerModal(); return false;">+</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="order_location">Location</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" name="order[location]" id="order_location" value="<%= @order.location %>" class="customer-input" placeholder="Type address or pick from map" style="flex: 1;">
+              <button type="button" class="btn btn-sm btn-secondary" id="mapToggleBtn">🗺️ Map</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map Container (hidden initially) -->
+        <div id="mapContainer" style="display: none; margin-bottom: 16px;">
+          <div id="map" style="height: 300px; border-radius: var(--radius); border: 1px solid var(--line-light);"></div>
+          <div id="mapLoading" style="display: none; text-align: center; padding: 20px; color: var(--muted-2);">Loading map...</div>
+          <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="mapSearchInput" placeholder="Search for a location..." style="flex: 1; padding: 8px 14px; font-family: 'Manrope', sans-serif; font-size: 0.85rem; color: var(--ink); background: var(--paper-2); border: 1px solid transparent; border-radius: var(--radius); outline: none;">
+            <button type="button" class="btn btn-sm btn-primary" id="mapSearchBtn">Search</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="mapCloseBtn">Close</button>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--muted-2); margin-top: 6px;">Click on the map to select a location, or search above.</p>
+        </div>
+
+        <!-- Order Items -->
+        <div class="form-group">
+          <label>Order Items</label>
+          <div id="orderItemsContainer">
+            <% if @order.order_items.any? %>
+              <% @order.order_items.each_with_index do |item, index| %>
+                <%= render 'order_item_fields', f: nil, item: item, index: index %>
+              <% end %>
+            <% else %>
+              <%= render 'order_item_fields', f: nil, item: nil, index: 0 %>
+            <% end %>
+          </div>
+          <button type="button" class="btn btn-sm btn-secondary" id="addItemBtn" style="margin-top: 8px;">+ Add Item</button>
+        </div>
+
+        <!-- Total & Price Paid -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Subtotal</label>
+            <input type="text" id="orderSubtotal" value="$0.00" class="customer-input" disabled style="background: var(--paper);">
+          </div>
+          <div class="form-group">
+            <label for="order_total_price">Total Price</label>
+            <input type="number" name="order[total_price]" id="order_total_price" step="0.01" min="0" value="<%= @order.total_price %>" class="customer-input">
+          </div>
+          <div class="form-group">
+            <label for="order_price_paid">Price Paid</label>
+            <input type="number" name="order[price_paid]" id="order_price_paid" step="0.01" min="0" value="<%= @order.price_paid %>" class="customer-input" placeholder="Leave blank if not paid">
+          </div>
+          <div class="form-group">
+            <label for="order_status">Status</label>
+            <select name="order[status]" id="order_status" class="customer-input">
+              <% @order.class.statuses.keys.each do |status| %>
+                <% if action == 'new' %>
+                  <% next if status == 'cancelled' || status == 'delivered' %>
+                <% else %>
+                  <% unless @order.can_transition_to?(status) %>
+                    <% next unless @order.status == status %>
+                  <% end %>
+                <% end %>
+                <option value="<%= status %>" <%= 'selected' if @order.status == status || (action == 'new' && status == 'pending') %>>
+                  <%= status.capitalize %>
+                </option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="orderSubmitBtn"><%= action == 'new' ? "Create Order" : "Update Order" %></button>
+          <button type="button" class="btn btn-secondary" id="orderModalCancelBtn" data-close-order-modal="orderModal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== JavaScript for dynamic items, map, and form submission ===== -->
+<script>
+  (function() {
+    // =========================================
+    // ORDER ITEMS - Dynamic rows
+    // =========================================
+    let itemIndex = <%= @order.order_items.any? ? @order.order_items.maximum(:id).to_i + 1 : 1 %>;
+    const itemsContainer = document.getElementById('orderItemsContainer');
+
+    function addItemRow(productId = '', quantity = 1, pricePerUnit = '') {
+      const row = document.createElement('div');
+      row.className = 'order-item-row';
+      row.dataset.index = itemIndex;
+      row.innerHTML = `
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div style="flex: 2; min-width: 150px;">
+            <select name="order[order_items_attributes][${itemIndex}][product_id]" class="item-product-select" style="width: 100%; padding: 8px 12px; font-family: 'Manrope', sans-serif; font-size: 0.9rem; color: var(--ink); background: var(--paper-2); border: 1px solid transparent; border-radius: var(--radius); outline: none;">
+              <option value="">Select Product</option>
+              <% Product.all.each do |product| %>
+                <option value="<%= product.id %>" <%= 'selected' if product.id == productId.to_i %>>
+                  <%= product.name %> (Stock: <%= product.quantity %>) - $<%= product.current_price %>
+                </option>
+              <% end %>
+            </select>
+          </div>
+          <div style="flex: 1; min-width: 80px;">
+            <input type="number" name="order[order_items_attributes][${itemIndex}][quantity]" class="item-quantity" value="${quantity}" min="1" step="1" style="width: 100%; padding: 8px 12px; font-family: 'Manrope', sans-serif; font-size: 0.9rem; color: var(--ink); background: var(--paper-2); border: 1px solid transparent; border-radius: var(--radius); outline: none;">
+          </div>
+          <div style="flex: 1; min-width: 80px;">
+            <input type="number" name="order[order_items_attributes][${itemIndex}][price_per_unit]" class="item-price" value="${pricePerUnit}" step="0.01" min="0" style="width: 100%; padding: 8px 12px; font-family: 'Manrope', sans-serif; font-size: 0.9rem; color: var(--ink); background: var(--paper-2); border: 1px solid transparent; border-radius: var(--radius); outline: none;">
+          </div>
+          <div style="flex: 0 0 auto;">
+            <button type="button" class="remove-item-btn" style="background: none; border: none; color: #b25c4a; cursor: pointer; font-size: 1.2rem;">×</button>
+          </div>
+        </div>
+      `;
+      itemsContainer.appendChild(row);
+      itemIndex++;
+
+      // Attach events for auto-calc and removal
+      const select = row.querySelector('.item-product-select');
+      const qty = row.querySelector('.item-quantity');
+      const price = row.querySelector('.item-price');
+
+      // Pre-fill price when product selected
+      if (select) {
+        select.addEventListener('change', function() {
+          const selectedOption = this.options[this.selectedIndex];
+          if (selectedOption && selectedOption.value) {
+            // Try to extract price from option text
+            const match = selectedOption.text.match(/\$([\d.]+)/);
+            if (match) {
+              price.value = match[1];
+            }
+          }
+          updateTotals();
+        });
+        // Trigger change to set initial price if product selected
+        if (select.value) {
+          select.dispatchEvent(new Event('change'));
+        }
+      }
+
+      if (qty) qty.addEventListener('input', updateTotals);
+      if (price) price.addEventListener('input', updateTotals);
+
+      // Remove button
+      const removeBtn = row.querySelector('.remove-item-btn');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+          row.remove();
+          updateTotals();
+        });
+      }
+
+      updateTotals();
+    }
+
+    // Add initial items from server
+    document.addEventListener('DOMContentLoaded', function() {
+      // Existing items are already rendered; we just need to attach events
+      document.querySelectorAll('.order-item-row').forEach(function(row) {
+        const select = row.querySelector('.item-product-select');
+        const qty = row.querySelector('.item-quantity');
+        const price = row.querySelector('.item-price');
+        if (select) select.addEventListener('change', updateTotals);
+        if (qty) qty.addEventListener('input', updateTotals);
+        if (price) price.addEventListener('input', updateTotals);
+        if (select && select.value) {
+          select.dispatchEvent(new Event('change'));
+        }
+      });
+      updateTotals();
+    });
+
+    // Add item button
+    document.getElementById('addItemBtn')?.addEventListener('click', function() {
+      addItemRow();
+    });
+
+    // =========================================
+    // UPDATE TOTALS
+    // =========================================
+    function updateTotals() {
+      let subtotal = 0;
+      document.querySelectorAll('.order-item-row').forEach(function(row) {
+        const qty = row.querySelector('.item-quantity');
+        const price = row.querySelector('.item-price');
+        if (qty && price) {
+          const q = parseFloat(qty.value) || 0;
+          const p = parseFloat(price.value) || 0;
+          subtotal += q * p;
+        }
+      });
+      document.getElementById('orderSubtotal').value = '$' + subtotal.toFixed(2);
+      // Auto-fill total if empty
+      const totalInput = document.getElementById('order_total_price');
+      if (totalInput && !totalInput.value) {
+        totalInput.value = subtotal.toFixed(2);
+      }
+    }
+
+    // =========================================
+    // MAP INTEGRATION (Leaflet)
+    // =========================================
+    let map = null;
+    let mapMarker = null;
+    let mapInitialized = false;
+
+    document.getElementById('mapToggleBtn')?.addEventListener('click', function() {
+      const container = document.getElementById('mapContainer');
+      if (container.style.display === 'none') {
+        container.style.display = 'block';
+        initializeMap();
+      } else {
+        container.style.display = 'none';
+        if (map) {
+          map.invalidateSize();
+        }
+      }
+    });
+
+    document.getElementById('mapCloseBtn')?.addEventListener('click', function() {
+      document.getElementById('mapContainer').style.display = 'none';
+    });
+
+    function initializeMap() {
+      if (mapInitialized) {
+        map.invalidateSize();
+        return;
+      }
+      const loading = document.getElementById('mapLoading');
+      loading.style.display = 'block';
+
+      // Get current location from the location input
+      const locationInput = document.getElementById('order_location');
+      let initialLat = 30.3753; // default to Lahore
+      let initialLng = 69.3451;
+      if (locationInput && locationInput.value) {
+        // Try to geocode? For simplicity, we'll use default and allow clicking.
+        // Could use reverse geocoding with Nominatim, but we'll keep it simple.
+      }
+
+      // Create map
+      map = L.map('map').setView([initialLat, initialLng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      // Add marker on click
+      map.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        if (mapMarker) {
+          mapMarker.setLatLng(e.latlng);
+        } else {
+          mapMarker = L.marker(e.latlng).addTo(map);
+        }
+        // Reverse geocode to get address
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.display_name) {
+              locationInput.value = data.display_name;
+            } else {
+              locationInput.value = `${lat}, ${lng}`;
+            }
+          })
+          .catch(() => {
+            locationInput.value = `${lat}, ${lng}`;
+          });
+      });
+
+      // Search
+      document.getElementById('mapSearchBtn')?.addEventListener('click', function() {
+        const query = document.getElementById('mapSearchInput').value;
+        if (!query) return;
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.length > 0) {
+              const lat = parseFloat(data[0].lat);
+              const lng = parseFloat(data[0].lon);
+              map.setView([lat, lng], 15);
+              if (mapMarker) {
+                mapMarker.setLatLng([lat, lng]);
+              } else {
+                mapMarker = L.marker([lat, lng]).addTo(map);
+              }
+              locationInput.value = data[0].display_name;
+            } else {
+              alert('Location not found');
+            }
+          })
+          .catch(() => alert('Search failed'));
+      });
+
+      loading.style.display = 'none';
+      mapInitialized = true;
+      map.invalidateSize();
+    }
+
+    // =========================================
+    // FORM SUBMISSION
+    // =========================================
+    function initForm() {
+      const form = document.getElementById('orderForm');
+      if (!form) return;
+      form.removeEventListener('submit', handleSubmit);
+      form.addEventListener('submit', handleSubmit);
+    }
+
+    function handleSubmit(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const form = e.target;
+      const submitBtn = document.getElementById('orderSubmitBtn');
+      const modal = document.getElementById('orderModal');
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+      }
+
+      // Gather order items (since they are dynamically added)
+      const formData = new FormData(form);
+
+      // Append order_items_attributes correctly
+      const itemRows = document.querySelectorAll('.order-item-row');
+      itemRows.forEach(function(row, index) {
+        const productSelect = row.querySelector('.item-product-select');
+        const qtyInput = row.querySelector('.item-quantity');
+        const priceInput = row.querySelector('.item-price');
+        if (productSelect && productSelect.value) {
+          formData.append(`order[order_items_attributes][${index}][product_id]`, productSelect.value);
+          formData.append(`order[order_items_attributes][${index}][quantity]`, qtyInput.value || 1);
+          formData.append(`order[order_items_attributes][${index}][price_per_unit]`, priceInput.value || 0);
+        }
+      });
+
+      const methodInput = form.querySelector('input[name="_method"]');
+      const method = (methodInput && methodInput.value) ? methodInput.value : 'POST';
+
+      fetch(form.action, {
+        method: method,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        body: formData
+      })
+      .then(function(response) {
+        if (response.ok) {
+          return response.json();
+        } else {
+          return response.text().then(function(html) {
+            throw { type: 'error', html: html };
+          });
+        }
+      })
+      .then(function(data) {
+        if (data.success) {
+          if (typeof window.showNotification === 'function') {
+            window.showNotification(data.message || 'Order saved successfully!', 'success');
+          }
+          if (modal) modal.remove();
+          document.body.style.overflow = 'auto';
+          setTimeout(function() {
+            window.location.reload();
+          }, 600);
+        }
+      })
+      .catch(function(error) {
+        if (error.type === 'error' && error.html) {
+          const container = document.getElementById('orderModal');
+          if (container) {
+            container.innerHTML = error.html;
+            // Re-initialize after HTML replacement
+            setTimeout(function() {
+              initForm();
+              // Re-run initial events
+              document.querySelectorAll('.order-item-row').forEach(function(row) {
+                const select = row.querySelector('.item-product-select');
+                const qty = row.querySelector('.item-quantity');
+                const price = row.querySelector('.item-price');
+                if (select) select.addEventListener('change', updateTotals);
+                if (qty) qty.addEventListener('input', updateTotals);
+                if (price) price.addEventListener('input', updateTotals);
+                if (select && select.value) {
+                  select.dispatchEvent(new Event('change'));
+                }
+              });
+              updateTotals();
+            }, 100);
+          }
+        } else {
+          if (typeof window.showNotification === 'function') {
+            window.showNotification('Something went wrong. Please try again.', 'error');
+          }
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Try Again';
+        }
+      });
+    }
+
+    // =========================================
+    // CLOSE MODAL
+    // =========================================
+    function closeOrderModal() {
+      const modal = document.getElementById('orderModal');
+      if (modal) modal.remove();
+      document.body.style.overflow = 'auto';
+    }
+
+    // Close events
+    document.addEventListener('click', function(e) {
+      const closeTrigger = e.target.closest('[data-close-order-modal]');
+      if (closeTrigger) {
+        e.preventDefault();
+        closeOrderModal();
+        return;
+      }
+      const overlay = e.target.closest('.modal-overlay');
+      if (overlay && e.target === overlay) {
+        closeOrderModal();
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const activeModal = document.querySelector('.modal-overlay');
+        if (activeModal) {
+          closeOrderModal();
+        }
+      }
+    });
+
+    // Initialize form when DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        initForm();
+        // Attach events for existing items
+        document.querySelectorAll('.order-item-row').forEach(function(row) {
+          const select = row.querySelector('.item-product-select');
+          const qty = row.querySelector('.item-quantity');
+          const price = row.querySelector('.item-price');
+          if (select) select.addEventListener('change', updateTotals);
+          if (qty) qty.addEventListener('input', updateTotals);
+          if (price) price.addEventListener('input', updateTotals);
+          if (select && select.value) {
+            select.dispatchEvent(new Event('change'));
+          }
+        });
+        updateTotals();
+      });
+    } else {
+      initForm();
+      document.querySelectorAll('.order-item-row').forEach(function(row) {
+        const select = row.querySelector('.item-product-select');
+        const qty = row.querySelector('.item-quantity');
+        const price = row.querySelector('.item-price');
+        if (select) select.addEventListener('change', updateTotals);
+        if (qty) qty.addEventListener('input', updateTotals);
+        if (price) price.addEventListener('input', updateTotals);
+        if (select && select.value) {
+          select.dispatchEvent(new Event('change'));
+        }
+      });
+      updateTotals();
+    }
+
+    // Re-attach on Turbo load
+    document.addEventListener('turbo:load', function() {
+      initForm();
+      document.querySelectorAll('.order-item-row').forEach(function(row) {
+        const select = row.querySelector('.item-product-select');
+        const qty = row.querySelector('.item-quantity');
+        const price = row.querySelector('.item-price');
+        if (select) select.addEventListener('change', updateTotals);
+        if (qty) qty.addEventListener('input', updateTotals);
+        if (price) price.addEventListener('input', updateTotals);
+        if (select && select.value) {
+          select.dispatchEvent(new Event('change'));
+        }
+      });
+      updateTotals();
+    });
+
+  })();
+</script>
