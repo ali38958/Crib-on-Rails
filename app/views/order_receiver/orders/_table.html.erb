@@ -30,8 +30,7 @@
             <td><%= order.created_at.strftime("%b %d, %Y") %></td>
             <td><%= order.created_by&.name || '-' %></td>
             <td>
-              <button onclick="viewOrder('<%= order.id %>')" class="btn-edit">View</button>
-              <button onclick="editOrder('<%= order.id %>')" class="btn-edit">Edit</button>
+              <%= link_to "View", order_receiver_order_path(order), class: "btn-edit" %>
             </td>
           </tr>
         <% end %>

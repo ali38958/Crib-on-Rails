@@ -9,7 +9,9 @@
     <p class="page-sub">View and manage all customer orders.</p>
   </div>
   <div class="page-actions">
-    <button onclick="openOrderModal()" class="btn btn-primary">+ Create Order</button>
+  <%= link_to order_receiver_launch_orders_path, class: "btn btn-primary" do %>
+    + Create Order
+  <% end %>
   </div>
 </div>
 
@@ -146,5 +148,4 @@
   }
   
   function editOrder(id) { openOrderModal(id); }
-  function viewOrder(id) { openOrderModal(id); }
 </script>

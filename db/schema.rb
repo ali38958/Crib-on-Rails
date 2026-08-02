@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_01_140648) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_02_104620) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -92,13 +92,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_01_140648) do
 
   create_table "orders", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.integer "created_by_id"
+    t.string "created_by_id"
     t.integer "customer_id"
+    t.string "location"
     t.decimal "price_paid", precision: 10, scale: 2
     t.integer "status", default: 0
     t.decimal "total_price", precision: 10, scale: 2
     t.datetime "updated_at", null: false
-    t.integer "updated_by_id"
+    t.string "updated_by_id"
     t.index ["created_at"], name: "index_orders_on_created_at"
     t.index ["created_by_id"], name: "index_orders_on_created_by_id"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
@@ -143,6 +144,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_01_140648) do
     t.index ["supplier_id"], name: "index_purchases_on_supplier_id"
   end
 
+  create_table "status_changes", force: :cascade do |t|
+    t.string "changed_by_id"
+    t.datetime "created_at", null: false
+    t.string "new_status"
+    t.string "old_status"
+    t.integer "order_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_status_changes_on_order_id"
+  end
+
   create_table "stock_managers", id: { type: :string, limit: 50 }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", limit: 50
@@ -174,4 +185,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_01_140648) do
   add_foreign_key "products", "categories"
   add_foreign_key "purchases", "products"
   add_foreign_key "purchases", "suppliers"
+  add_foreign_key "status_changes", "orders"
 end

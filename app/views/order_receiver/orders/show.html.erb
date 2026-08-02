@@ -1,0 +1,503 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "order_receiver/orders" %>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<% end %>
+
+<div class="wrap">
+  <div class="header-row">
+    <div>
+      <div class="crumb">ORDERS <span class="dot"></span> #<%= @order.id %></div>
+      <div class="title-line">
+        <h1>Order #<%= @order.id %></h1>
+        <span class="badge <%= @order.status %>"><span class="bdot"></span><%= @order.status.capitalize %></span>
+      </div>
+      <p class="sub">
+        Placed on <%= @order.created_at.strftime("%b %d, %Y · %I:%M %p") %>
+        <span class="sep">·</span>
+        Last updated <%= time_ago_in_words(@order.updated_at) %> ago
+      </p>
+    </div>
+    <div class="header-actions">
+      <%= link_to "← Back to Orders", order_receiver_orders_path, class: "btn btn-ghost" %>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- MAIN COLUMN -->
+    <div class="col-main">
+
+      <!-- Customer & Location -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-left"><span class="num">01</span><h3 class="card-title">Customer &amp; Location</h3></div>
+          <%= link_to "View customer →", order_receiver_customers_path(search: @order.customer.name, per_page: 10, page: 1), class: "card-link" %>
+        </div>
+
+        <div class="info-row">
+          <div class="avatar"><%= @order.customer&.name&.first&.upcase || '?' %></div>
+          <div>
+            <div class="info-name"><%= @order.customer&.name || 'N/A' %></div>
+            <div class="info-meta">
+              <a href="tel:<%= @order.customer&.phone %>"><%= @order.customer&.phone || 'N/A' %></a>
+              <% if @order.customer&.email.present? %>
+                &nbsp;·&nbsp;
+                <a href="mailto:<%= @order.customer&.email %>"><%= @order.customer&.email %></a>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="loc-block">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-7.58 8-13A8 8 0 1 0 4 9c0 5.42 8 13 8 13Z"/><circle cx="12" cy="9" r="3"/></svg>
+          <div>
+            <div class="loc-label">Delivery Location</div>
+            <div class="loc-text"><%= @order.location || 'No location provided' %></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Items -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-left"><span class="num">02</span><h3 class="card-title">Order Items</h3></div>
+          <span style="font-size:12.5px;color:var(--muted);"><%= @order.order_items.count %> items</span>
+        </div>
+
+        <table class="items">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="num">Unit Price</th>
+              <th class="num">Qty</th>
+              <th class="num">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @order.order_items.each do |item| %>
+              <tr>
+                <td>
+                  <div class="prod-cell">
+                    <div class="prod-thumb" style="cursor: pointer; overflow: hidden; border-radius: 4px; background: var(--paper-2);" onclick="enlargeImage(event)">
+                      <% if item.product&.image_url.present? %>
+                        <img src="<%= item.product.image_url %>" alt="<%= item.product.name %>" style="width: 100%; height: 100%; object-fit: cover;">
+                      <% else %>
+                        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 24px;">📦</div>
+                      <% end %>
+                    </div>
+                    <div>
+                      <div class="prod-name"><%= item.product&.name || 'N/A' %></div>
+                      <div class="prod-sub">SKU · <%= item.product&.id || 'N/A' %></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="num">$<%= item.price_per_unit %></td>
+                <td class="num"><span class="qty-pill"><%= item.quantity %></span></td>
+                <td class="num line-total">$<%= item.quantity * item.price_per_unit %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Order Timeline -->
+      <div class="card">
+        <div class="card-head"><div class="card-head-left"><span class="num">03</span><h3 class="card-title">Order Timeline</h3></div></div>
+        <div class="timeline">
+          <% @status_changes.each do |change| %>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-body">
+                <div class="tl-title"><%= change.new_status.capitalize %></div>
+                <div class="tl-time">
+                  <%= change.created_at.strftime("%b %d, %Y · %I:%M %p") %>
+                  <% if change.changed_by_id.present? %>
+                    · by <%= OrderReceiver.find_by(id: change.changed_by_id)&.name || 'Unknown' %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+          <% if @status_changes.empty? %>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-body">
+                <div class="tl-title">Order Created</div>
+                <div class="tl-time"><%= @order.created_at.strftime("%b %d, %Y · %I:%M %p") %></div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="col-side">
+
+      <!-- Summary -->
+      <div class="card" style="padding:0;border:none;box-shadow:none;background:transparent;">
+        <div class="summary">
+          <div class="sum-row muted"><span>Subtotal</span><span class="val">$<%= @order.subtotal %></span></div>
+          <div class="sum-divider"></div>
+          <div class="sum-row total"><span>Total price</span><span class="val">$<%= @order.total_price %></span></div>
+          <div class="sum-divider"></div>
+          <div class="sum-row paid">
+            <div style="display: flex; gap: 8px; align-items: center; width: 100%; justify-content: space-between;">
+              <span class="muted-label" style="color:#b6afa2;">Price paid</span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <span class="val" id="paidDisplay">$<%= @order.price_paid || 0 %></span>
+                <button class="btn-edit" style="padding: 4px 8px; font-size: 11px;" onclick="enablePriceEdit()">Edit</button>
+              </div>
+            </div>
+            <div id="priceEditForm" style="display: none; gap: 8px; margin-top: 10px;">
+              <input 
+                type="number" 
+                id="pricePaidInput" 
+                min="<%= @order.price_paid || 0 %>" 
+                max="<%= @order.total_price %>" 
+                value="<%= @order.price_paid || 0 %>" 
+                step="0.01"
+                class="customer-input"
+                style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper-2); font-size: 14px;"
+              >
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-brass" style="flex: 1; padding: 8px; font-size: 12px; justify-content: center;" onclick="savePricePaid()">Save</button>
+                <button class="btn btn-ghost" style="flex: 1; padding: 8px; font-size: 12px; justify-content: center;" onclick="cancelPriceEdit()">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div class="sum-row due"><span class="muted-label" style="color:#b6afa2;">Balance due</span><span class="val" id="balanceDueDisplay">$<%= (@order.total_price || 0) - (@order.price_paid || 0) %></span></div>
+        </div>
+      </div>
+
+      <!-- Order Details -->
+      <div class="card">
+        <div class="card-head"><h3 class="card-title" style="font-size:16px;">Order Details</h3></div>
+        <div class="meta-list">
+          <div class="meta-item"><span class="k">Order ID</span><span class="v mono">#<%= @order.id %></span></div>
+          <div class="meta-item"><span class="k">Status</span><span class="v"><span class="badge <%= @order.status %>" style="padding:3px 10px;font-size:10.5px;"><span class="bdot"></span><%= @order.status.capitalize %></span></span></div>
+          <div class="meta-item"><span class="k">Created by</span><span class="v"><%= @order.created_by&.name || '-' %></span></div>
+          <div class="meta-item"><span class="k">Last updated by</span><span class="v"><%= @order.updated_by&.name || '-' %></span></div>
+          <div class="meta-item"><span class="k">Created</span><span class="v mono"><%= @order.created_at.strftime("%b %d, %Y") %></span></div>
+          <div class="meta-item"><span class="k">Updated</span><span class="v mono"><%= @order.updated_at.strftime("%b %d, %Y") %></span></div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="card">
+        <div class="card-head"><h3 class="card-title" style="font-size:16px;">Actions</h3></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <% if @can_update_status %>
+            <select id="statusSelect" class="customer-input" style="width:100%;padding:12px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper-2);">
+              <option value="">Change Status</option>
+              <% Order.statuses.keys.each do |status| %>
+                <% next if status == @order.status %>
+                <% next unless @order.can_transition_to?(status) %>
+                <option value="<%= status %>"><%= status.capitalize %></option>
+              <% end %>
+            </select>
+            <button class="btn btn-brass" style="justify-content:center;" id="updateStatusBtn">Update Status</button>
+          <% else %>
+            <div style="font-size:13px;color:var(--muted);text-align:center;padding:8px 0;">This order is <%= @order.status %> and cannot be changed.</div>
+          <% end %>
+
+          <button class="btn btn-ghost" style="justify-content:center;" onclick="showPrintNotification()">Print Invoice</button>
+
+          <% if @can_update_status && @order.status != 'cancelled' %>
+            <button class="btn btn-danger-ghost" style="justify-content:center;" onclick="openCancelModal()">Cancel Order</button>
+          <% end %>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- CANCEL CONFIRMATION MODAL -->
+<div class="overlay" id="cancelModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <h3 style="color:var(--bad);">Cancel Order</h3>
+      <button class="modal-close" onclick="closeModal('cancelModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:15px;margin:0 0 12px;">Are you sure you want to cancel this order?</p>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 16px;">This action cannot be undone.</p>
+      <div style="display:flex;gap:12px;">
+        <button class="btn btn-danger-ghost" style="flex:1;justify-content:center;" onclick="closeModal('cancelModal')">No</button>
+        <button class="btn btn-brass" style="flex:1;justify-content:center;" id="confirmCancelBtn" disabled>Yes (<span id="countdownTimer">3</span>)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // =========================================
+  // STATUS UPDATE
+  // =========================================
+  document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('statusSelect');
+    const updateBtn = document.getElementById('updateStatusBtn');
+
+    if (updateBtn && statusSelect) {
+      updateBtn.addEventListener('click', function() {
+        const newStatus = statusSelect.value;
+        if (!newStatus) {
+          alert('Please select a status.');
+          return;
+        }
+
+        if (confirm(`Are you sure you want to change status to ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}?`)) {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+          
+          fetch('/order_receiver/orders/<%= @order.id %>/update_status', {
+            method: 'PATCH',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({ status: newStatus })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              if (typeof window.showNotification === 'function') {
+                window.showNotification(data.message, 'success');
+              }
+              setTimeout(() => window.location.reload(), 500);
+            } else {
+              if (typeof window.showNotification === 'function') {
+                window.showNotification(data.message, 'error');
+              }
+            }
+          })
+          .catch(() => {
+            if (typeof window.showNotification === 'function') {
+              window.showNotification('Something went wrong.', 'error');
+            }
+          });
+        }
+      });
+    }
+  });
+
+  // =========================================
+  // CANCEL MODAL
+  // =========================================
+  let countdownInterval = null;
+
+  function openCancelModal() {
+    openModal('cancelModal');
+    const confirmBtn = document.getElementById('confirmCancelBtn');
+    const timerSpan = document.getElementById('countdownTimer');
+    let countdown = 3;
+    confirmBtn.disabled = true;
+    timerSpan.textContent = countdown;
+
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+      countdown--;
+      if (countdown <= 0) {
+        clearInterval(countdownInterval);
+        confirmBtn.disabled = false;
+        timerSpan.textContent = 'Yes';
+      } else {
+        timerSpan.textContent = countdown;
+      }
+    }, 1000);
+
+    // Store the confirm handler
+    confirmBtn.onclick = function() {
+      if (this.disabled) return;
+      confirmCancelOrder();
+    };
+  }
+
+  function confirmCancelOrder() {
+    closeModal('cancelModal');
+    clearInterval(countdownInterval);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    fetch('/order_receiver/orders/<%= @order.id %>/cancel', {
+      method: 'PATCH',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        if (typeof window.showNotification === 'function') {
+          window.showNotification(data.message, 'success');
+        }
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        if (typeof window.showNotification === 'function') {
+          window.showNotification(data.message, 'error');
+        }
+      }
+    })
+    .catch(() => {
+      if (typeof window.showNotification === 'function') {
+        window.showNotification('Something went wrong.', 'error');
+      }
+    });
+  }
+
+  // =========================================
+  // PRINT INVOICE
+  // =========================================
+  function showPrintNotification() {
+    if (typeof window.showNotification === 'function') {
+      window.showNotification('Please upgrade your plans to premium to unlock this feature.', 'info');
+    } else {
+      alert('Please upgrade your plans to premium to unlock this feature.');
+    }
+  }
+
+  // =========================================
+  // MODAL FUNCTIONS
+  // =========================================
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+  document.querySelectorAll('.overlay').forEach(o => {
+    o.addEventListener('click', e => { if(e.target === o) o.classList.remove('open'); });
+  });
+
+  // =========================================
+  // IMAGE ENLARGEMENT
+  // =========================================
+  function enlargeImage(event) {
+    const img = event.currentTarget.querySelector('img');
+    if (!img) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'overlay open';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;';
+    
+    const container = document.createElement('div');
+    container.style.cssText = 'position: relative; max-width: 90vw; max-height: 90vh;';
+    
+    const enlargedImg = document.createElement('img');
+    enlargedImg.src = img.src;
+    enlargedImg.alt = img.alt;
+    enlargedImg.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;';
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = 'position: absolute; top: -40px; right: 0; background: none; border: none; color: white; font-size: 28px; cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;';
+    closeBtn.onclick = () => modal.remove();
+    
+    container.appendChild(enlargedImg);
+    container.appendChild(closeBtn);
+    modal.appendChild(container);
+    modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+    
+    document.body.appendChild(modal);
+  }
+
+  // =========================================
+  // PRICE PAID UPDATE
+  // =========================================
+  function enablePriceEdit() {
+    document.getElementById('paidDisplay').style.display = 'none';
+    document.getElementById('priceEditForm').style.display = 'flex';
+    document.getElementById('priceEditForm').style.flexDirection = 'column';
+    document.getElementById('pricePaidInput').focus();
+  }
+
+  function cancelPriceEdit() {
+    document.getElementById('priceEditForm').style.display = 'none';
+    document.getElementById('paidDisplay').style.display = 'inline';
+  }
+
+  function savePricePaid() {
+    const newPrice = parseFloat(document.getElementById('pricePaidInput').value);
+    const currentPrice = <%= @order.price_paid || 0 %>;
+    const totalPrice = <%= @order.total_price %>;
+
+    if (isNaN(newPrice)) {
+      if (typeof window.showNotification === 'function') {
+        window.showNotification('Please enter a valid price.', 'error');
+      }
+      return;
+    }
+
+    if (newPrice < currentPrice) {
+      if (typeof window.showNotification === 'function') {
+        window.showNotification('Price paid cannot be decreased.', 'error');
+      }
+      return;
+    }
+
+    if (newPrice > totalPrice) {
+      if (typeof window.showNotification === 'function') {
+        window.showNotification(`Price paid cannot exceed total price ($${totalPrice}).`, 'error');
+      }
+      return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    
+    fetch('/order_receiver/orders/<%= @order.id %>/update_price_paid', {
+      method: 'PATCH',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({ price_paid: newPrice })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        if (typeof window.showNotification === 'function') {
+          window.showNotification(data.message, 'success');
+        }
+        document.getElementById('paidDisplay').textContent = '$' + newPrice.toFixed(2);
+        document.getElementById('balanceDueDisplay').textContent = '$' + (totalPrice - newPrice).toFixed(2);
+        cancelPriceEdit();
+      } else {
+        if (typeof window.showNotification === 'function') {
+          window.showNotification(data.message, 'error');
+        }
+      }
+    })
+    .catch(() => {
+      if (typeof window.showNotification === 'function') {
+        window.showNotification('Something went wrong.', 'error');
+      }
+    });
+  }
+
+  // Update balance due when user changes input
+  document.addEventListener('DOMContentLoaded', function() {
+    const priceInput = document.getElementById('pricePaidInput');
+    if (priceInput) {
+      priceInput.addEventListener('input', function() {
+        const currentPrice = <%= @order.price_paid || 0 %>;
+        const totalPrice = <%= @order.total_price %>;
+        const value = parseFloat(this.value);
+        
+        if (!isNaN(value)) {
+          if (value < currentPrice) {
+            this.style.borderColor = 'var(--bad)';
+          } else if (value > totalPrice) {
+            this.style.borderColor = 'var(--bad)';
+          } else {
+            this.style.borderColor = 'var(--line)';
+          }
+        }
+      });
+    }
+  });
+</script>

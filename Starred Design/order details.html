@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order #1042 · Crib</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal:#242220;
+    --charcoal-2:#34302b;
+    --ink:#1c1a18;
+    --paper:#f4f0e6;
+    --paper-2:#ece5d4;
+    --paper-3:#e3dac4;
+    --brass:#b3854a;
+    --brass-dark:#8f6832;
+    --brass-light:#dcb27c;
+    --muted:#8a8172;
+    --line:#d8cdb2;
+    --good:#5c7a52;
+    --good-bg:#e7ede3;
+    --bad:#a5493a;
+    --bad-bg:#f6e6e2;
+    --warn:#a6822f;
+    --warn-bg:#f2e9d2;
+    --info:#4c6a8a;
+    --info-bg:#e1e9f0;
+    --shadow: 0 1px 2px rgba(28,26,24,.06), 0 8px 24px -12px rgba(28,26,24,.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, #f8f4ea 0%, var(--paper) 55%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:48px 24px 96px;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+
+  /* header */
+  .crumb{
+    font-family:'Source Code Pro',monospace;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--brass-dark);display:flex;align-items:center;gap:8px;margin-bottom:10px;
+  }
+  .crumb .dot{width:4px;height:4px;border-radius:50%;background:var(--brass);}
+  .header-row{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    margin-bottom:32px;border-bottom:1px solid var(--line);padding-bottom:24px;gap:20px;
+  }
+  .title-line{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  h1{
+    font-family:'Fraunces',serif;font-weight:600;font-size:36px;margin:0;
+    color:var(--ink);letter-spacing:-.01em;
+  }
+  .sub{color:var(--muted);font-size:14px;margin:8px 0 0;display:flex;align-items:center;gap:8px;}
+  .sub .sep{color:var(--paper-3);}
+
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 13px;border-radius:20px;font-size:12px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.04em;
+  }
+  .badge .bdot{width:6px;height:6px;border-radius:50%;}
+  .badge.pending{background:var(--warn-bg);color:var(--warn);}
+  .badge.pending .bdot{background:var(--warn);}
+  .badge.confirmed{background:var(--info-bg);color:var(--info);}
+  .badge.confirmed .bdot{background:var(--info);}
+  .badge.processing{background:#ece0f2;color:#7a4c96;}
+  .badge.processing .bdot{background:#7a4c96;}
+  .badge.shipped{background:#dde7f0;color:#3c6c96;}
+  .badge.shipped .bdot{background:#3c6c96;}
+  .badge.delivered{background:var(--good-bg);color:var(--good);}
+  .badge.delivered .bdot{background:var(--good);}
+
+  .header-actions{display:flex;gap:10px;flex-shrink:0;}
+  .btn{
+    font-family:'Inter',sans-serif;font-size:13.5px;font-weight:600;
+    border-radius:8px;padding:11px 18px;border:1px solid transparent;
+    cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+    transition:all .15s ease;white-space:nowrap;text-decoration:none;
+  }
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--charcoal);}
+  .btn-ghost:hover{background:var(--paper-2);border-color:var(--brass);}
+  .btn-dark{background:var(--charcoal);color:var(--paper);}
+  .btn-dark:hover{background:var(--ink);}
+  .btn-brass{background:var(--brass);color:#fff;}
+  .btn-brass:hover{background:var(--brass-dark);}
+  .btn-danger-ghost{background:transparent;border-color:var(--bad-bg);color:var(--bad);}
+  .btn-danger-ghost:hover{background:var(--bad-bg);}
+
+  /* layout */
+  .layout{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start;}
+  .col-main{display:flex;flex-direction:column;gap:22px;}
+  .col-side{display:flex;flex-direction:column;gap:22px;}
+
+  .card{
+    background:#fdfbf6;border:1px solid var(--line);border-radius:14px;
+    padding:26px 28px;box-shadow:var(--shadow);
+  }
+  .card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:20px;}
+  .card-head-left{display:flex;align-items:baseline;gap:10px;}
+  .card-head .num{font-family:'Source Code Pro',monospace;color:var(--brass);font-size:12px;}
+  .card-title{font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0;}
+  .card-link{font-size:12.5px;font-weight:600;color:var(--brass-dark);text-decoration:none;}
+  .card-link:hover{text-decoration:underline;}
+
+  /* customer / location block */
+  .info-row{display:flex;gap:16px;align-items:flex-start;}
+  .avatar{
+    width:50px;height:50px;border-radius:12px;flex-shrink:0;
+    background:linear-gradient(135deg, var(--brass-light), var(--brass-dark));
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-family:'Fraunces',serif;font-weight:600;font-size:19px;
+  }
+  .info-name{font-weight:700;font-size:15.5px;color:var(--ink);}
+  .info-meta{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.6;}
+  .info-meta a{color:var(--charcoal-2);text-decoration:none;}
+  .info-meta a:hover{color:var(--brass-dark);}
+  .divider{height:1px;background:var(--line);margin:20px 0;}
+  .loc-block{display:flex;gap:12px;align-items:flex-start;}
+  .loc-block svg{flex-shrink:0;color:var(--brass-dark);margin-top:2px;}
+  .loc-text{font-size:14px;color:var(--ink);line-height:1.55;}
+  .loc-label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+  .map-static{
+    margin-top:14px;height:150px;border-radius:10px;overflow:hidden;border:1px solid var(--paper-3);
+    background:
+      linear-gradient(var(--paper-3) 1px, transparent 1px) 0 0/28px 28px,
+      linear-gradient(90deg, var(--paper-3) 1px, transparent 1px) 0 0/28px 28px,
+      #ece5d0;
+    position:relative;
+  }
+  .map-static .pin{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);
+    color:var(--bad);
+  }
+  .map-static .road{position:absolute;background:#fff8e8;border:1px solid #ddd0ac;}
+  .map-static .road.h{height:8px;left:0;right:0;top:55px;}
+  .map-static .road.v{width:8px;top:0;bottom:0;left:120px;}
+
+  /* items table */
+  table.items{width:100%;border-collapse:collapse;}
+  table.items thead th{
+    text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--muted);padding:0 0 12px;border-bottom:1px solid var(--line);
+  }
+  table.items thead th.num{text-align:right;}
+  table.items tbody td{
+    padding:16px 0;border-bottom:1px solid #f1ece0;font-size:14px;vertical-align:middle;
+  }
+  table.items tbody tr:last-child td{border-bottom:none;}
+  table.items td.num{text-align:right;font-family:'Source Code Pro',monospace;}
+  .prod-thumb{
+    width:38px;height:38px;border-radius:8px;background:var(--paper-2);
+    display:flex;align-items:center;justify-content:center;color:var(--brass-dark);
+    flex-shrink:0;font-size:16px;
+  }
+  .prod-cell{display:flex;align-items:center;gap:12px;}
+  .prod-name{font-weight:600;color:var(--ink);}
+  .prod-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .qty-pill{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:30px;padding:4px 9px;border-radius:6px;background:var(--paper-2);
+    font-family:'Source Code Pro',monospace;font-weight:600;font-size:13px;
+  }
+  .line-total{font-weight:700;color:var(--ink);}
+
+  /* summary sidebar */
+  .summary{background:var(--charcoal);border-radius:14px;padding:26px 26px;color:var(--paper);}
+  .sum-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:14px;}
+  .sum-row.muted{color:#b6afa2;}
+  .sum-row .val{font-family:'Source Code Pro',monospace;font-weight:600;}
+  .sum-divider{height:1px;background:rgba(244,240,230,.14);margin:10px 0;}
+  .sum-row.total{font-size:21px;padding-top:14px;font-family:'Fraunces',serif;font-weight:600;}
+  .sum-row.total .val{font-family:'Fraunces',serif;font-size:25px;}
+  .sum-row.paid .val{color:#8fbf7f;}
+  .sum-row.due .val{color:#e2a08a;}
+  .pay-strip{
+    margin-top:16px;padding:12px 14px;border-radius:9px;
+    background:rgba(244,240,230,.08);display:flex;align-items:center;gap:10px;
+    font-size:12.5px;color:#d8d2c4;
+  }
+  .pay-strip .pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .pay-strip.full .pdot{background:#8fbf7f;}
+  .pay-strip.partial .pdot{background:var(--brass-light);}
+  .pay-strip.none .pdot{background:#e2a08a;}
+
+  /* meta list */
+  .meta-list{display:flex;flex-direction:column;gap:14px;}
+  .meta-item{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;}
+  .meta-item .k{color:var(--muted);}
+  .meta-item .v{font-weight:600;color:var(--ink);text-align:right;}
+  .meta-item .v.mono{font-family:'Source Code Pro',monospace;font-weight:500;}
+
+  .timeline{display:flex;flex-direction:column;gap:0;}
+  .tl-item{display:flex;gap:12px;position:relative;padding-bottom:20px;}
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-item::before{
+    content:'';position:absolute;left:5px;top:16px;bottom:-4px;width:1px;background:var(--line);
+  }
+  .tl-item:last-child::before{display:none;}
+  .tl-dot{width:11px;height:11px;border-radius:50%;background:var(--brass);border:2px solid #fdfbf6;box-shadow:0 0 0 1px var(--line);flex-shrink:0;margin-top:2px;}
+  .tl-body .tl-title{font-size:13px;font-weight:600;color:var(--ink);}
+  .tl-body .tl-time{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  @media (max-width:860px){
+    .layout{grid-template-columns:1fr;}
+    .header-row{flex-direction:column;}
+    h1{font-size:29px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header-row">
+    <div>
+      <div class="crumb">ORDERS <span class="dot"></span> #1042</div>
+      <div class="title-line">
+        <h1>Order #1042</h1>
+        <span class="badge confirmed"><span class="bdot"></span>Confirmed</span>
+      </div>
+      <p class="sub">Placed on Jul 28, 2026 · 4:12 PM <span class="sep">·</span> Last updated 2 days ago</p>
+    </div>
+    <div class="header-actions">
+      <a href="#" class="btn btn-ghost">← Back to Orders</a>
+      <a href="#" class="btn btn-dark">Edit Order</a>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- MAIN COLUMN -->
+    <div class="col-main">
+
+      <!-- Customer & Location -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-left"><span class="num">01</span><h3 class="card-title">Customer &amp; Location</h3></div>
+          <a href="#" class="card-link">View customer →</a>
+        </div>
+
+        <div class="info-row">
+          <div class="avatar">SR</div>
+          <div>
+            <div class="info-name">Sana Rehman</div>
+            <div class="info-meta">
+              <a href="tel:03211234567">0321-1234567</a> &nbsp;·&nbsp;
+              <a href="mailto:sana.rehman@example.com">sana.rehman@example.com</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="loc-block">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-7.58 8-13A8 8 0 1 0 4 9c0 5.42 8 13 8 13Z"/><circle cx="12" cy="9" r="3"/></svg>
+          <div>
+            <div class="loc-label">Delivery Location</div>
+            <div class="loc-text">House 14, Street 6, Bahria Town Phase 4, Rawalpindi, Punjab, Pakistan</div>
+          </div>
+        </div>
+        <div class="map-static">
+          <div class="road h"></div><div class="road v"></div>
+          <svg class="pin" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22s8-7.58 8-13A8 8 0 1 0 4 9c0 5.42 8 13 8 13Z"/></svg>
+        </div>
+      </div>
+
+      <!-- Order Items -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-left"><span class="num">02</span><h3 class="card-title">Order Items</h3></div>
+          <span style="font-size:12.5px;color:var(--muted);">4 items</span>
+        </div>
+
+        <table class="items">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="num">Unit Price</th>
+              <th class="num">Qty</th>
+              <th class="num">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="prod-cell">
+                  <div class="prod-thumb">🧱</div>
+                  <div>
+                    <div class="prod-name">Cement Bag (50kg)</div>
+                    <div class="prod-sub">SKU · CEM-50KG</div>
+                  </div>
+                </div>
+              </td>
+              <td class="num">Rs 1,450.00</td>
+              <td class="num"><span class="qty-pill">6</span></td>
+              <td class="num line-total">Rs 8,700.00</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="prod-cell">
+                  <div class="prod-thumb">🔩</div>
+                  <div>
+                    <div class="prod-name">Steel Rod (12mm)</div>
+                    <div class="prod-sub">SKU · STL-12MM</div>
+                  </div>
+                </div>
+              </td>
+              <td class="num">Rs 2,150.00</td>
+              <td class="num"><span class="qty-pill">10</span></td>
+              <td class="num line-total">Rs 21,500.00</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="prod-cell">
+                  <div class="prod-thumb">🏖️</div>
+                  <div>
+                    <div class="prod-name">Sand (per ton)</div>
+                    <div class="prod-sub">SKU · SND-TON</div>
+                  </div>
+                </div>
+              </td>
+              <td class="num">Rs 3,200.00</td>
+              <td class="num"><span class="qty-pill">2</span></td>
+              <td class="num line-total">Rs 6,400.00</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="prod-cell">
+                  <div class="prod-thumb">🎨</div>
+                  <div>
+                    <div class="prod-name">Paint (20L)</div>
+                    <div class="prod-sub">SKU · PNT-20L</div>
+                  </div>
+                </div>
+              </td>
+              <td class="num">Rs 8,900.00</td>
+              <td class="num"><span class="qty-pill">1</span></td>
+              <td class="num line-total">Rs 8,900.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Order Timeline -->
+      <div class="card">
+        <div class="card-head"><div class="card-head-left"><span class="num">03</span><h3 class="card-title">Order Timeline</h3></div></div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-body">
+              <div class="tl-title">Order confirmed</div>
+              <div class="tl-time">Jul 29, 2026 · 9:04 AM</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:var(--paper-3);"></div>
+            <div class="tl-body">
+              <div class="tl-title">Order placed</div>
+              <div class="tl-time">Jul 28, 2026 · 4:12 PM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="col-side">
+
+      <div class="card" style="padding:0;border:none;box-shadow:none;background:transparent;">
+        <div class="summary">
+          <div class="sum-row muted"><span>Subtotal</span><span class="val">Rs 45,500.00</span></div>
+          <div class="sum-row muted"><span>Discount (10%)</span><span class="val" style="color:var(--brass-light);">– Rs 4,550.00</span></div>
+          <div class="sum-divider"></div>
+          <div class="sum-row total"><span>Total price</span><span class="val">Rs 40,950.00</span></div>
+          <div class="sum-divider"></div>
+          <div class="sum-row paid"><span class="muted-label" style="color:#b6afa2;">Price paid</span><span class="val">Rs 25,000.00</span></div>
+          <div class="sum-row due"><span class="muted-label" style="color:#b6afa2;">Balance due</span><span class="val">Rs 15,950.00</span></div>
+
+          <div class="pay-strip partial">
+            <span class="pdot"></span>
+            Partially paid — 61% collected
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3 class="card-title" style="font-size:16px;">Order Details</h3></div>
+        <div class="meta-list">
+          <div class="meta-item"><span class="k">Order ID</span><span class="v mono">#1042</span></div>
+          <div class="meta-item"><span class="k">Status</span><span class="v"><span class="badge confirmed" style="padding:3px 10px;font-size:10.5px;"><span class="bdot"></span>Confirmed</span></span></div>
+          <div class="meta-item"><span class="k">Created by</span><span class="v">Hamza Iqbal</span></div>
+          <div class="meta-item"><span class="k">Last updated by</span><span class="v">Hamza Iqbal</span></div>
+          <div class="meta-item"><span class="k">Created</span><span class="v mono">Jul 28, 2026</span></div>
+          <div class="meta-item"><span class="k">Updated</span><span class="v mono">Jul 30, 2026</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3 class="card-title" style="font-size:16px;">Actions</h3></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a href="#" class="btn btn-brass" style="justify-content:center;">Mark as Delivered</a>
+          <a href="#" class="btn btn-ghost" style="justify-content:center;">Print Invoice</a>
+          <a href="#" class="btn btn-danger-ghost" style="justify-content:center;">Cancel Order</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

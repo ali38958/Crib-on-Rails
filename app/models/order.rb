@@ -1,10 +1,13 @@
 class Order < ApplicationRecord
   belongs_to :customer
-  belongs_to :created_by, class_name: "OrderReceiver", optional: true
-  belongs_to :updated_by, class_name: "OrderReceiver", optional: true
-  has_many :order_items
+  belongs_to :created_by, class_name: "OrderReceiver", optional: true, foreign_key: "created_by_id"
+  belongs_to :updated_by, class_name: "OrderReceiver", optional: true, foreign_key: "updated_by_id"
+  has_many :order_items, dependent: :destroy
   has_many :products, through: :order_items
-  
+  has_many :status_changes, dependent: :destroy
+
+  accepts_nested_attributes_for :order_items, allow_destroy: true, reject_if: :all_blank
+
   enum :status, {
     pending: 0,
     confirmed: 1,
@@ -13,8 +16,6 @@ class Order < ApplicationRecord
     shipped: 4,
     delivered: 5
   }
-
-  # Add after the enum definition
 
   STATUS_TRANSITIONS = {
     'pending' => ['confirmed', 'cancelled'],
@@ -28,16 +29,19 @@ class Order < ApplicationRecord
   def can_transition_to?(new_status)
     return false if new_status.blank?
     return true if status == new_status
-    
     STATUS_TRANSITIONS[status]&.include?(new_status)
-  end
-
-  def status_transition_allowed?(new_status)
-    can_transition_to?(new_status)
   end
 
   def completed?
     delivered? || cancelled?
+  end
+
+  def record_status_change(old_status, new_status, changed_by)
+    status_changes.create!(
+      old_status: old_status,
+      new_status: new_status,
+      changed_by_id: changed_by&.id
+    )
   end
   
   validates :total_price, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true

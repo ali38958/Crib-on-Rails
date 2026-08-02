@@ -35,8 +35,27 @@ Rails.application.routes.draw do
   # Order Receiver namespace
   namespace :order_receiver do
     get '/', to: 'dashboard#index'
+    
+    # Customer routes
     resources :customers, only: [:index, :new, :create, :edit, :update, :destroy]
-    resources :orders, only: [:index, :new, :create, :show, :edit, :update]
+    
+    # Order routes
+    get 'orders/launch', to: 'orders#launch', as: 'launch_orders'
+    post 'orders/create_order', to: 'orders#create_order', as: 'create_order'
+    
+    resources :orders, only: [:index, :show, :edit, :update, :destroy] do
+      member do
+        patch 'update_status'
+        patch 'cancel'
+        patch 'update_price_paid'
+      end
+      collection do
+        get 'launch', to: 'orders#launch'
+        post 'create_order', to: 'orders#create_order'
+      end
+    end
+    
+    # Product routes (read-only)
     resources :products, only: [:index, :show]
   end
 end

@@ -1,5 +1,5 @@
 class OrderReceiver::OrdersController < OrderReceiver::BaseController
-  before_action :set_order, only: [:show, :edit, :update, :destroy]
+  before_action :set_order, only: [:show, :edit, :update, :destroy, :update_status, :cancel, :update_price_paid]
   
   def index
     @orders = Order.includes(:customer, :created_by).all
@@ -37,60 +37,133 @@ class OrderReceiver::OrdersController < OrderReceiver::BaseController
   end
   
   def show
-    render partial: 'show', layout: false if request.xhr?
+    @order = Order.find(params[:id])
+    @order.reload
+    @status_changes = @order.status_changes.order(created_at: :desc)
+    @can_update_status = !@order.completed?
   end
   
-  def new
+  def launch
     @order = Order.new
     @order.order_items.build
-    render partial: 'form', locals: { action: 'new' }, layout: false
   end
   
-  def create
+  def create_order
+    puts "===== FULL PARAMS ====="
+    puts params.inspect
+    puts "======================"
+    
     @order = Order.new(order_params)
     @order.created_by = current_user
     
     if @order.save
-      respond_to do |format|
-        format.html { redirect_to order_receiver_orders_path, notice: "Order created successfully!" }
-        format.json { render json: { success: true, message: "Order created successfully!", order: @order } }
-      end
+      redirect_to order_receiver_orders_path, notice: "Order created successfully!"
     else
-      respond_to do |format|
-        format.html { render partial: 'form', locals: { action: 'new' }, status: :unprocessable_entity, layout: false }
-        format.json { render json: { success: false, message: @order.errors.full_messages.join(', ') }, status: :unprocessable_entity }
-      end
+      puts @order.errors.full_messages.inspect
+      render :launch, status: :unprocessable_entity
     end
   end
   
   def edit
-    render partial: 'form', locals: { action: 'edit' }, layout: false
+    # Edit order - you can use launch partial or create a separate edit view
+    render :edit
   end
-  
+
   def update
     @order.updated_by = current_user
     
-    # Check status transition rules
     if order_params[:status].present? && @order.status != order_params[:status].to_i
       unless @order.can_transition_to?(order_params[:status])
-        respond_to do |format|
-          format.html { redirect_to order_receiver_orders_path, alert: "Invalid status transition!" }
-          format.json { render json: { success: false, message: "Invalid status transition!" }, status: :unprocessable_entity }
-        end
+        redirect_to order_receiver_orders_path, alert: "Invalid status transition!"
         return
       end
     end
     
     if @order.update(order_params)
-      respond_to do |format|
-        format.html { redirect_to order_receiver_orders_path, notice: "Order updated successfully!" }
-        format.json { render json: { success: true, message: "Order updated successfully!", order: @order } }
-      end
+      redirect_to order_receiver_orders_path, notice: "Order updated successfully!"
     else
-      respond_to do |format|
-        format.html { render partial: 'form', locals: { action: 'edit' }, status: :unprocessable_entity, layout: false }
-        format.json { render json: { success: false, message: @order.errors.full_messages.join(', ') }, status: :unprocessable_entity }
-      end
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def update_status
+    new_status = params[:status]
+
+    if @order.completed?
+      render json: { success: false, message: "Cannot update status of a completed order." }
+      return
+    end
+
+    unless @order.can_transition_to?(new_status)
+      render json: { success: false, message: "Invalid status transition." }
+      return
+    end
+
+    old_status = @order.status.to_s
+    @order.status = new_status
+    @order.updated_by = current_user
+
+    if @order.save
+      @order.record_status_change(old_status, new_status.to_s, current_user)
+      render json: { success: true, message: "Status updated to #{new_status.capitalize}!" }
+    else
+      render json: { success: false, message: "Failed to update status." }
+    end
+  end
+
+  def cancel
+    if @order.completed?
+      render json: { success: false, message: "Cannot cancel a completed order." }
+      return
+    end
+
+    if @order.status == 'cancelled'
+      render json: { success: false, message: "Order is already cancelled." }
+      return
+    end
+
+    old_status = @order.status.to_s
+    @order.status = 'cancelled'
+    @order.updated_by = current_user
+
+    if @order.save
+      @order.record_status_change(old_status, 'cancelled', current_user)
+      render json: { success: true, message: "Order has been cancelled." }
+    else
+      render json: { success: false, message: "Failed to cancel order." }
+    end
+  end
+
+  def update_price_paid
+    new_price_paid = params[:price_paid].to_f
+    current_price_paid = @order.price_paid || 0
+    total_price = @order.total_price
+
+    # Validation: price paid cannot decrease
+    if new_price_paid < current_price_paid
+      render json: { success: false, message: "Price paid cannot be decreased." }
+      return
+    end
+
+    # Validation: price paid cannot exceed total price
+    if new_price_paid > total_price
+      render json: { success: false, message: "Price paid cannot exceed total price." }
+      return
+    end
+
+    # Validation: price paid cannot be negative
+    if new_price_paid < 0
+      render json: { success: false, message: "Price paid cannot be negative." }
+      return
+    end
+
+    @order.price_paid = new_price_paid
+    @order.updated_by = current_user
+
+    if @order.save
+      render json: { success: true, message: "Price paid updated successfully!" }
+    else
+      render json: { success: false, message: "Failed to update price paid." }
     end
   end
   
@@ -107,6 +180,6 @@ class OrderReceiver::OrdersController < OrderReceiver::BaseController
   
   def order_params
     params.require(:order).permit(:customer_id, :status, :total_price, :price_paid, :location, 
-                                  order_items_attributes: [:id, :product_id, :quantity, :price_per_unit, :_destroy])
+                                  order_items_attributes: [:product_id, :quantity, :price_per_unit, :_destroy])
   end
 end

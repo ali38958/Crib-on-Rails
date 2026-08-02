@@ -1,0 +1,610 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "order_receiver/orders" %>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<% end %>
+
+<div class="wrap">
+  <div class="header-row">
+    <div>
+      <div class="crumb">ORDERS <span class="dot"></span> NEW</div>
+      <h1>Launch Order</h1>
+      <p class="sub">Create a new customer order with items.</p>
+    </div>
+    <%= link_to "← Back to Orders", order_receiver_orders_path, class: "btn btn-ghost" %>
+  </div>
+
+  <%= form_with model: @order, url: order_receiver_create_order_path, class: "order-form", id: "orderForm", data: { turbo: false } do |f| %>
+    <!-- Customer & Location -->
+    <div class="card">
+      <div class="card-head"><span class="num">01</span><h3 class="card-title">Customer &amp; Location</h3></div>
+      <div class="grid-2">
+        <div>
+          <label>Customer <span class="req">*</span></label>
+          <div class="combo-input-row">
+            <div class="combo" id="customerCombo">
+              <button type="button" class="combo-field placeholder" id="customerField" onclick="toggleCombo('customerCombo')">
+                Select customer
+                <span class="combo-caret">▾</span>
+              </button>
+              <div class="combo-panel" id="customerPanel">
+                <div class="combo-search"><input type="text" placeholder="Search customers…" id="customerSearch" oninput="renderCustomers()"></div>
+                <div class="combo-list" id="customerList"></div>
+              </div>
+            </div>
+            <button type="button" class="btn-icon" title="Add new customer" onclick="openModal('addCustomerModal')">+</button>
+          </div>
+          <%= f.hidden_field :customer_id, id: "customerIdField" %>
+        </div>
+        <div>
+          <label>Location <span class="req">*</span></label>
+          <div class="loc-row">
+            <input type="text" id="locationInput" class="customer-input" placeholder="Type address or pick from map" value="<%= @order.location %>" style="flex: 1;">
+            <button type="button" class="btn-icon brass" title="Pick location on map" onclick="openMapModal()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-7.58 8-13A8 8 0 1 0 4 9c0 5.42 8 13 8 13Z"/><circle cx="12" cy="9" r="3"/></svg>
+            </button>
+          </div>
+          <%= f.hidden_field :location, id: "locationField" %>
+          <div class="field-error" id="locationError">Location is required — pick one on the map or type it in.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Items -->
+    <div class="card">
+      <div class="card-head"><span class="num">02</span><h3 class="card-title">Order Items</h3></div>
+      <div id="itemsWrap"></div>
+      <button type="button" class="add-item-btn" onclick="addItem()">+ Add Item</button>
+    </div>
+
+    <!-- Discount -->
+    <div class="card">
+      <div class="card-head"><span class="num">03</span><h3 class="card-title">Discount</h3></div>
+      <div class="discount-toggle">
+        <button type="button" class="active" id="discPctBtn" onclick="setDiscountMode('pct')">Percentage %</button>
+        <button type="button" id="discCashBtn" onclick="setDiscountMode('cash')">Fixed amount $</button>
+      </div>
+      <div class="grid-2">
+        <div>
+          <label id="discInputLabel">Discount (%)</label>
+          <input type="number" id="discountInput" placeholder="0" min="0" step="0.01" oninput="recalc()">
+        </div>
+        <div>
+          <label>Discount applied</label>
+          <input type="text" id="discountApplied" disabled value="$0.00" style="background:var(--paper);color:var(--muted);">
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="card" style="padding:0;border:none;box-shadow:none;background:transparent;">
+      <div class="summary">
+        <div class="sum-row muted"><span>Subtotal</span><span class="val" id="sumSubtotal">$0.00</span></div>
+        <div class="sum-row discount muted"><span id="sumDiscountLabel">Discount</span><span class="val" id="sumDiscount">– $0.00</span></div>
+        <div class="sum-divider"></div>
+        <div class="sum-row total"><span>Total price</span><span class="val" id="sumTotal">$0.00</span></div>
+      </div>
+    </div>
+
+    <!-- Payment & Status -->
+    <div class="card">
+      <div class="card-head"><span class="num">04</span><h3 class="card-title">Payment &amp; Status</h3></div>
+      <div class="grid-2">
+        <div>
+          <label>Price Paid <span class="opt">(optional)</span></label>
+          <input type="number" id="pricePaid" placeholder="Leave blank if not paid" min="0" step="0.01" oninput="recalc()">
+          <%= f.hidden_field :price_paid, id: "pricePaidField" %>
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="statusSelect" class="customer-input">
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+          </select>
+          <%= f.hidden_field :status, id: "statusField" %>
+        </div>
+      </div>
+      <div class="sum-row balance" style="padding-top:16px;">
+        <span style="font-size:13px;color:var(--muted);font-weight:600;">Balance</span>
+        <span class="val" id="balanceText" style="font-weight:700;">$0.00 due</span>
+      </div>
+    </div>
+
+    <div class="foot-row">
+      <button type="submit" class="btn btn-dark" id="createOrderBtn">Create Order</button>
+      <%= link_to "Cancel", order_receiver_orders_path, class: "btn btn-ghost" %>
+    </div>
+
+    <%= f.hidden_field :total_price, id: "totalPriceField" %>
+  <% end %>
+</div>
+
+<!-- ADD CUSTOMER MODAL -->
+<div class="overlay" id="addCustomerModal">
+  <div class="modal">
+    <div class="modal-head"><h3>Add Customer</h3><button class="modal-close" onclick="closeModal('addCustomerModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Full name <span class="req">*</span></label><input type="text" id="newCustName" placeholder="e.g. Amir Khan"></div>
+      <div class="field"><label>Phone <span class="req">*</span></label><input type="text" id="newCustPhone" placeholder="03xx-xxxxxxx"></div>
+      <div class="field"><label>Email <span class="opt">(optional)</span></label><input type="text" id="newCustEmail" placeholder="name@example.com"></div>
+      <div class="field"><label>Address <span class="opt">(optional)</span></label><input type="text" id="newCustAddr" placeholder="Street, area, city"></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('addCustomerModal')">Cancel</button>
+      <button type="button" class="btn btn-brass" onclick="saveNewCustomer()">Save &amp; Select</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAP MODAL -->
+<div class="overlay" id="mapModal">
+  <div class="modal modal-wide">
+    <div class="modal-head"><h3>Pick Location</h3><button class="modal-close" onclick="closeModal('mapModal')">✕</button></div>
+    <div class="modal-body no-pad">
+      <div class="map-search-bar">
+        <span class="map-search-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <input type="text" id="mapSearchInput" placeholder="Search a city, street or landmark…" oninput="onMapSearchInput()">
+        <div class="map-suggestions" id="mapSuggestions"></div>
+      </div>
+      <div id="leafletMap"></div>
+      <div class="map-footer-info placeholder" id="mapFooterInfo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-7.58 8-13A8 8 0 1 0 4 9c0 5.42 8 13 8 13Z"/><circle cx="12" cy="9" r="3"/></svg>
+        <span id="mapFooterText">Search above or click anywhere on the map to drop a pin</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('mapModal')">Cancel</button>
+      <button type="button" class="btn btn-brass" id="confirmLocationBtn" disabled onclick="confirmLocation()">Confirm Location</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // =========================================
+  // DATA
+  // =========================================
+  let customers = [
+    <% Customer.all.each do |c| %>
+      {id: <%= c.id %>, name: '<%= j c.name %>', phone: '<%= j c.phone %>', address: '<%= j c.location || "" %>', lat: 33.6844, lng: 73.0479},
+    <% end %>
+  ];
+  let selectedCustomer = null;
+
+  let products = [
+    <% Product.all.each do |p| %>
+      {id: <%= p.id %>, name: '<%= j p.name %>', price: <%= p.current_price %>},
+    <% end %>
+  ];
+
+  let items = [];
+  let discountMode = 'pct';
+  let selectedLocationText = null;
+  let lastPicked = null;
+  let leafletMap = null;
+  let marker = null;
+  let searchDebounce = null;
+
+  // =========================================
+  // MODALS
+  // =========================================
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.overlay').forEach(o => {
+    o.addEventListener('click', e => { if(e.target === o) o.classList.remove('open'); });
+  });
+
+  // =========================================
+  // LOCATION
+  // =========================================
+  function applyLocation(text){
+    selectedLocationText = text;
+    document.getElementById('locationInput').value = text;
+    document.getElementById('locationField').value = text;
+    document.getElementById('locationError').classList.remove('show');
+  }
+
+  // =========================================
+  // CUSTOMER COMBO
+  // =========================================
+  function toggleCombo(comboId){
+    const panel = document.querySelector('#' + comboId + ' .combo-panel');
+    const isOpen = panel.classList.contains('open');
+    document.querySelectorAll('.combo-panel').forEach(p => p.classList.remove('open'));
+    if(!isOpen){ panel.classList.add('open'); renderCustomers(); document.getElementById('customerSearch').focus(); }
+  }
+
+  document.addEventListener('click', e => {
+    if(!e.target.closest('#customerCombo')) document.getElementById('customerPanel').classList.remove('open');
+  });
+
+  function renderCustomers(){
+    const q = document.getElementById('customerSearch').value.toLowerCase();
+    const list = document.getElementById('customerList');
+    const filtered = customers.filter(c => c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q));
+    list.innerHTML = filtered.length ? filtered.map(c =>
+      `<div class="combo-opt" onclick="selectCustomer(${c.id})">
+        <span class="name">${c.name}</span><span class="meta">${c.phone} · ${c.address || 'No address'}</span>
+      </div>`
+    ).join('') : `<div class="combo-empty">No customers found</div>`;
+  }
+
+  function selectCustomer(id){
+    selectedCustomer = customers.find(c => c.id === id);
+    const field = document.getElementById('customerField');
+    field.classList.remove('placeholder');
+    field.innerHTML = `${selectedCustomer.name} <span class="combo-caret">▾</span>`;
+    document.getElementById('customerIdField').value = id;
+    document.getElementById('customerPanel').classList.remove('open');
+
+    // Auto-fill location ONLY if location field is completely empty
+    const locationInput = document.getElementById('locationInput');
+    if(locationInput && locationInput.value.trim() === '' && selectedCustomer.address){
+      applyLocation(selectedCustomer.address);
+    }
+  }
+
+  function saveNewCustomer(){
+    const name = document.getElementById('newCustName').value.trim();
+    const phone = document.getElementById('newCustPhone').value.trim();
+    const email = document.getElementById('newCustEmail').value.trim();
+    const addr = document.getElementById('newCustAddr').value.trim();
+    if(!name || !phone){ alert('Name and phone are required.'); return; }
+
+    fetch('/order_receiver/customers', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ customer: { name, phone, email, location: addr } })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if(data.success){
+        const id = data.customer.id;
+        customers.push({id, name, phone, address: addr || '', lat: 33.6844, lng: 73.0479});
+        selectCustomer(id);
+        document.getElementById('newCustName').value = '';
+        document.getElementById('newCustPhone').value = '';
+        document.getElementById('newCustEmail').value = '';
+        document.getElementById('newCustAddr').value = '';
+        closeModal('addCustomerModal');
+        if(typeof window.showNotification === 'function') {
+          window.showNotification('Customer added successfully!', 'success');
+        }
+      }
+    })
+    .catch(() => alert('Failed to add customer.'));
+  }
+
+  // =========================================
+  // LOCATION
+  // =========================================
+  function confirmLocation(){
+    if(!lastPicked) return;
+    applyLocation(lastPicked.text);
+    document.getElementById('locationField').value = lastPicked.text;
+    closeModal('mapModal');
+  }
+
+  // =========================================
+  // MAP MODAL
+  // =========================================
+  function openMapModal(){
+    openModal('mapModal');
+    setTimeout(initLeaflet, 30);
+  }
+
+  function initLeaflet(){
+    if(!leafletMap){
+      const startLat = selectedCustomer ? selectedCustomer.lat : 33.6844;
+      const startLng = selectedCustomer ? selectedCustomer.lng : 73.0479;
+      leafletMap = L.map('leafletMap').setView([startLat, startLng], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(leafletMap);
+      leafletMap.on('click', onMapClick);
+    } else {
+      leafletMap.invalidateSize();
+    }
+    if(selectedLocationText && lastPicked && lastPicked.lat){
+      dropMarker(lastPicked.lat, lastPicked.lng);
+      setFooterInfo(selectedLocationText);
+      document.getElementById('confirmLocationBtn').disabled = false;
+    }
+  }
+
+  function dropMarker(lat, lng){
+    if(marker){ marker.setLatLng([lat, lng]); }
+    else { marker = L.marker([lat, lng]).addTo(leafletMap); }
+    leafletMap.panTo([lat, lng]);
+  }
+
+  function setFooterInfo(text, loading){
+    const el = document.getElementById('mapFooterInfo');
+    const span = document.getElementById('mapFooterText');
+    el.classList.remove('placeholder');
+    span.textContent = text;
+    document.getElementById('confirmLocationBtn').disabled = !!loading;
+  }
+
+  async function onMapClick(e){
+    const {lat, lng} = e.latlng;
+    dropMarker(lat, lng);
+    setFooterInfo('Looking up address…', true);
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=17&addressdetails=1`);
+      const data = await res.json();
+      const label = data.display_name || `Dropped pin · ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      lastPicked = {text: label, lat, lng};
+      setFooterInfo(label);
+      document.getElementById('confirmLocationBtn').disabled = false;
+    } catch(err){
+      const label = `Dropped pin · ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      lastPicked = {text: label, lat, lng};
+      setFooterInfo(label);
+      document.getElementById('confirmLocationBtn').disabled = false;
+    }
+  }
+
+  function onMapSearchInput(){
+    const q = document.getElementById('mapSearchInput').value.trim();
+    clearTimeout(searchDebounce);
+    const box = document.getElementById('mapSuggestions');
+    if(q.length < 3){ box.classList.remove('open'); box.innerHTML=''; return; }
+    searchDebounce = setTimeout(async () => {
+      try{
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=6`);
+        const results = await res.json();
+        renderMapSuggestions(results);
+      } catch(err){
+        box.innerHTML = `<div class="combo-empty">Search unavailable — click the map to drop a pin instead</div>`;
+        box.classList.add('open');
+      }
+    }, 380);
+  }
+
+  function renderMapSuggestions(results){
+    const box = document.getElementById('mapSuggestions');
+    if(!results.length){
+      box.innerHTML = `<div class="combo-empty">No matches — try a different search</div>`;
+      box.classList.add('open');
+      return;
+    }
+    box.innerHTML = results.map(r =>
+      `<div class="combo-opt" onclick='pickSearchResult(${r.lat}, ${r.lon}, ${JSON.stringify(r.display_name)})'>
+        <span class="name">${r.display_name.split(',')[0]}</span>
+        <span class="meta">${r.display_name}</span>
+      </div>`
+    ).join('');
+    box.classList.add('open');
+  }
+
+  function pickSearchResult(lat, lng, label){
+    lat = parseFloat(lat); lng = parseFloat(lng);
+    leafletMap.setView([lat, lng], 15);
+    dropMarker(lat, lng);
+    setFooterInfo(label);
+    lastPicked = {text: label, lat, lng};
+    document.getElementById('mapSuggestions').classList.remove('open');
+    document.getElementById('mapSearchInput').value = label;
+    document.getElementById('confirmLocationBtn').disabled = false;
+  }
+
+  document.addEventListener('click', e => {
+    if(!e.target.closest('.map-search-bar')) document.getElementById('mapSuggestions').classList.remove('open');
+  });
+
+  function confirmLocation(){
+    if(!lastPicked) return;
+    applyLocation(lastPicked.text);
+    document.getElementById('locationField').value = lastPicked.text;
+    closeModal('mapModal');
+  }
+
+  // =========================================
+  // ORDER ITEMS
+  // =========================================
+  function addItem(){ items.push({productId: null, qty: 1}); renderItems(); }
+  function removeItem(idx){ items.splice(idx, 1); if(items.length === 0) items.push({productId: null, qty: 1}); renderItems(); }
+  function setItemProduct(idx, pid){items[idx].productId = pid; renderItems(); }
+  function setItemQty(idx, val){
+    let v = parseInt(val) || 1;
+    if(v < 1) v = 1;
+    items[idx].qty = v;
+    renderItems(); // re-renders row totals + calls recalc() internally
+  }
+
+  function renderItems(){
+    const wrap = document.getElementById('itemsWrap');
+    if(!wrap) return;
+    wrap.innerHTML = items.map((item, idx) => {
+      const prod = products.find(p => p.id === item.productId);
+      const lineTotal = prod ? prod.price * item.qty : 0;
+      return `
+      <div class="item-row" data-index="${idx}">
+        <div class="item-product">
+          <div class="combo" id="prodCombo${idx}">
+            <button type="button" class="combo-field ${prod ? '' : 'placeholder'}" onclick="toggleProductCombo(${idx})">
+              ${prod ? `${prod.name} · $${prod.price}` : 'Select product'}
+              <span class="combo-caret">▾</span>
+            </button>
+            <div class="combo-panel" id="prodPanel${idx}">
+              <div class="combo-search"><input type="text" placeholder="Search products…" oninput="renderProductOpts(${idx}, this.value)"></div>
+              <div class="combo-list" id="prodList${idx}"></div>
+            </div>
+          </div>
+        </div>
+        <div class="qty-stepper">
+          <button type="button" onclick="setItemQty(${idx}, ${item.qty - 1})">−</button>
+          <input type="number" name="order[order_items_attributes][${idx}][quantity]" value="${item.qty}" min="1" step="1" onchange="setItemQty(${idx}, this.value)">
+          <button type="button" onclick="setItemQty(${idx}, ${item.qty + 1})">+</button>
+        </div>
+        <div class="item-total">${prod ? '$' + lineTotal.toFixed(2) : '—'}</div>
+        <!-- HIDDEN INPUTS FOR FORM SUBMISSION -->
+        <input type="hidden" name="order[order_items_attributes][${idx}][product_id]" value="${item.productId || ''}">
+        <input type="hidden" name="order[order_items_attributes][${idx}][price_per_unit]" value="${prod ? prod.price : ''}">
+        <button type="button" class="item-remove" onclick="removeItem(${idx})">✕</button>
+      </div>`;
+    }).join('');
+    recalc();
+  }
+
+  function toggleProductCombo(idx){
+    const panel = document.getElementById('prodPanel' + idx);
+    const isOpen = panel.classList.contains('open');
+    document.querySelectorAll('.combo-panel').forEach(p => p.classList.remove('open'));
+    if(!isOpen){ panel.classList.add('open'); renderProductOpts(idx, ''); }
+  }
+
+  document.addEventListener('click', e => {
+    items.forEach((_, idx) => {
+      if(!e.target.closest('#prodCombo' + idx)){
+        const p = document.getElementById('prodPanel' + idx);
+        if(p) p.classList.remove('open');
+      }
+    });
+  });
+
+  function renderProductOpts(idx, q){
+    q = (q || '').toLowerCase();
+    const list = document.getElementById('prodList' + idx);
+    if(!list) return;
+    const filtered = products.filter(p => p.name.toLowerCase().includes(q));
+    list.innerHTML = filtered.length ? filtered.map(p =>
+      `<div class="combo-opt" onclick="setItemProduct(${idx}, ${p.id})">
+        <span class="name">${p.name}</span><span class="meta">$${p.price} / unit</span>
+      </div>`
+    ).join('') : `<div class="combo-empty">No products found</div>`;
+  }
+
+  // =========================================
+  // DISCOUNT
+  // =========================================
+  function setDiscountMode(mode){
+    discountMode = mode;
+    const pctBtn = document.getElementById('discPctBtn');
+    const cashBtn = document.getElementById('discCashBtn');
+    const discountInput = document.getElementById('discountInput');
+    const discInputLabel = document.getElementById('discInputLabel');
+    
+    pctBtn.classList.toggle('active', mode === 'pct');
+    cashBtn.classList.toggle('active', mode === 'cash');
+    
+    if(mode === 'pct'){
+      discInputLabel.textContent = 'Discount (%)';
+      discountInput.placeholder = '0';
+      discountInput.disabled = false;
+      discountInput.value = '';
+    } else {
+      discInputLabel.textContent = 'Discount ($)';
+      discountInput.placeholder = '0.00';
+      discountInput.disabled = false;
+      discountInput.value = '';
+    }
+    
+    recalc();
+  }
+
+  // =========================================
+  // CALCULATIONS
+  // =========================================
+  function money(n){ return '$' + (Math.max(n, 0)).toFixed(2); }
+
+  function recalc(){
+    const subtotal = items.reduce((sum, it) => {
+      const p = products.find(pr => pr.id === it.productId);
+      return sum + (p ? p.price * it.qty : 0);
+    }, 0);
+
+    const discRaw = parseFloat(document.getElementById('discountInput').value) || 0;
+    let discountAmount = 0;
+    let displayPercentage = 0;
+
+    if(discountMode === 'pct'){
+      const pct = Math.min(Math.max(discRaw, 0), 100);
+      discountAmount = subtotal * (pct / 100);
+      displayPercentage = pct;
+    } else {
+      discountAmount = Math.min(Math.max(discRaw, 0), subtotal);
+      displayPercentage = subtotal > 0 ? (discountAmount / subtotal * 100) : 0;
+    }
+
+    const total = Math.max(subtotal - discountAmount, 0);
+    const paid = parseFloat(document.getElementById('pricePaid').value) || 0;
+    const balance = total - paid;
+
+    // Discount applied field: show percentage in Fixed mode, show amount in Percentage mode
+    if(discountMode === 'pct'){
+      document.getElementById('discountApplied').value = money(discountAmount);
+    } else {
+      document.getElementById('discountApplied').value = displayPercentage.toFixed(1) + '%';
+    }
+
+    document.getElementById('sumSubtotal').textContent = money(subtotal);
+    document.getElementById('sumDiscountLabel').textContent = discountMode === 'pct' ? `Discount (${displayPercentage}%)` : `Discount (${displayPercentage.toFixed(1)}%)`;
+    document.getElementById('sumDiscount').textContent = discountAmount > 0 ? '– ' + money(discountAmount) : money(0);
+    document.getElementById('sumTotal').textContent = money(total);
+
+    const balEl = document.getElementById('balanceText');
+    if(paid <= 0){
+      balEl.textContent = money(total) + ' due';
+      balEl.className = 'val due';
+    } else if(balance > 0){
+      balEl.textContent = money(balance) + ' due';
+      balEl.className = 'val due';
+    } else {
+      balEl.textContent = balance < 0 ? money(-balance) + ' overpaid' : 'Paid in full';
+      balEl.className = 'val paid';
+    }
+
+    // Set form fields
+    document.getElementById('totalPriceField').value = total.toFixed(2);
+    document.getElementById('pricePaidField').value = paid.toFixed(2);
+    document.getElementById('statusField').value = document.getElementById('statusSelect').value;
+  }
+
+  // =========================================
+  // INIT
+  // =========================================
+  document.addEventListener('DOMContentLoaded', function(){
+    // Manual location input
+    document.getElementById('locationInput')?.addEventListener('input', function() {
+      selectedLocationText = this.value;
+      document.getElementById('locationField').value = this.value;
+      if(this.value.trim()) {
+        document.getElementById('locationError').classList.remove('show');
+      }
+    });
+
+    renderItems();
+    recalc();
+  });
+
+  // Expose functions globally
+  window.openModal = openModal;
+  window.closeModal = closeModal;
+  window.toggleCombo = toggleCombo;
+  window.renderCustomers = renderCustomers;
+  window.selectCustomer = selectCustomer;
+  window.saveNewCustomer = saveNewCustomer;
+  window.openMapModal = openMapModal;
+  window.onMapSearchInput = onMapSearchInput;
+  window.pickSearchResult = pickSearchResult;
+  window.confirmLocation = confirmLocation;
+  window.addItem = addItem;
+  window.removeItem = removeItem;
+  window.setItemProduct = setItemProduct;
+  window.setItemQty = setItemQty;
+  window.toggleProductCombo = toggleProductCombo;
+  window.renderProductOpts = renderProductOpts;
+  window.setDiscountMode = setDiscountMode;
+  window.recalc = recalc;
+</script>
