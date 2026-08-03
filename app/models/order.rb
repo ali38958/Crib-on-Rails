@@ -38,8 +38,8 @@ class Order < ApplicationRecord
 
   def record_status_change(old_status, new_status, changed_by)
     status_changes.create!(
-      old_status: old_status,
-      new_status: new_status,
+      old_status: old_status.to_s,
+      new_status: new_status.to_s,
       changed_by_id: changed_by&.id
     )
   end

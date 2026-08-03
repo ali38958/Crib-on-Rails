@@ -9,9 +9,9 @@
     <p class="page-sub">View and manage all customer orders.</p>
   </div>
   <div class="page-actions">
-  <%= link_to order_receiver_launch_orders_path, class: "btn btn-primary" do %>
-    + Create Order
-  <% end %>
+    <%= link_to order_receiver_launch_orders_path, class: "btn btn-primary" do %>
+      + Create Order
+    <% end %>
   </div>
 </div>
 
@@ -19,7 +19,7 @@
 <div class="filters-bar">
   <div class="filters-left">
     <div class="filter-group">
-      <input type="text" id="searchInput" placeholder="Search orders (ID, Customer)..." value="<%= params[:search] %>" class="filter-input">
+      <input type="text" id="searchInput" placeholder="Search orders (ID, Customer)..." value="<%= params[:search] %>" class="filter-input" autofocus="<%= params[:search].present? %>">
     </div>
     
     <div class="filter-group">
@@ -76,6 +76,12 @@
     const clearBtn = document.getElementById('clearFiltersBtn');
     const tableContainer = document.getElementById('ordersTable');
     
+    // Restore focus to search input if there's a value
+    if (searchInput && searchInput.value) {
+      searchInput.focus();
+      searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+    }
+    
     function buildUrl(params) {
       const url = new URL(window.location.href);
       Object.keys(params).forEach(key => {
@@ -89,14 +95,45 @@
       return url.toString();
     }
     
+    function fetchOrders() {
+      const params = new URLSearchParams();
+      if (searchInput && searchInput.value) params.set('search', searchInput.value);
+      if (statusFilter && statusFilter.value && statusFilter.value !== 'all') params.set('status', statusFilter.value);
+      if (dateFrom && dateFrom.value) params.set('date_from', dateFrom.value);
+      if (dateTo && dateTo.value) params.set('date_to', dateTo.value);
+      if (perPageSelect && perPageSelect.value) params.set('per_page', perPageSelect.value);
+      params.set('page', 1);
+      
+      const url = window.location.pathname + '?' + params.toString();
+      
+      // Update URL without reload
+      window.history.pushState({}, '', url);
+      
+      // Fetch table content
+      fetch(url, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => response.text())
+      .then(html => {
+        // Replace the table container with the new HTML
+        const container = document.getElementById('ordersTable');
+        if (container) {
+          container.innerHTML = html;
+        }
+        // Restore focus
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+      })
+      .catch(error => console.error('Error:', error));
+    }
+    
+    // Apply filters
     function applyFilters() {
-      window.location.href = buildUrl({
-        search: searchInput ? searchInput.value : '',
-        status: statusFilter ? statusFilter.value : '',
-        date_from: dateFrom ? dateFrom.value : '',
-        date_to: dateTo ? dateTo.value : '',
-        per_page: perPageSelect ? perPageSelect.value : ''
-      });
+      fetchOrders();
     }
     
     // Apply button
@@ -107,7 +144,12 @@
     // Clear filters
     if (clearBtn) {
       clearBtn.addEventListener('click', function() {
-        window.location.href = window.location.pathname;
+        searchInput.value = '';
+        statusFilter.value = 'all';
+        dateFrom.value = '';
+        dateTo.value = '';
+        perPageSelect.value = '10';
+        fetchOrders();
       });
     }
     
@@ -121,14 +163,87 @@
       statusFilter.addEventListener('change', applyFilters);
     }
     
-    // Search with debounce
+    // Search with debounce - no page reload
     let searchTimeout;
     if (searchInput) {
       searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(applyFilters, 500);
+        searchTimeout = setTimeout(fetchOrders, 400);
       });
     }
+    
+    // Handle pagination clicks via AJAX
+    document.addEventListener('click', function(e) {
+      const paginationLink = e.target.closest('.pagination a');
+      if (paginationLink) {
+        e.preventDefault();
+        const url = paginationLink.href;
+        window.history.pushState({}, '', url);
+        
+        fetch(url, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const newTable = doc.getElementById('ordersTable');
+          if (newTable) {
+            tableContainer.innerHTML = newTable.innerHTML;
+          }
+          const newCount = doc.getElementById('totalCount');
+          if (newCount) {
+            document.getElementById('totalCount').textContent = newCount.textContent;
+          }
+          // Restore focus to search
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+          }
+        })
+        .catch(error => console.error('Error:', error));
+      }
+    });
+    
+    // Handle browser back/forward
+    window.addEventListener('popstate', function() {
+      fetch(window.location.href, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(response => response.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newTable = doc.getElementById('ordersTable');
+        if (newTable) {
+          tableContainer.innerHTML = newTable.innerHTML;
+        }
+        const newCount = doc.getElementById('totalCount');
+        if (newCount) {
+          document.getElementById('totalCount').textContent = newCount.textContent;
+        }
+        // Update search input value
+        const params = new URLSearchParams(window.location.search);
+        if (searchInput) {
+          searchInput.value = params.get('search') || '';
+          searchInput.focus();
+          searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+        if (statusFilter) {
+          statusFilter.value = params.get('status') || 'all';
+        }
+        if (dateFrom) {
+          dateFrom.value = params.get('date_from') || '';
+        }
+        if (dateTo) {
+          dateTo.value = params.get('date_to') || '';
+        }
+        if (perPageSelect) {
+          perPageSelect.value = params.get('per_page') || '10';
+        }
+      })
+      .catch(error => console.error('Error:', error));
+    });
   });
   
   // Order functions

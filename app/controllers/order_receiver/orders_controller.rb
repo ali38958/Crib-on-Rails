@@ -8,7 +8,7 @@ class OrderReceiver::OrdersController < OrderReceiver::BaseController
     if params[:search].present?
       search_term = "%#{params[:search]}%"
       @orders = @orders.joins(:customer).where(
-        "orders.id::text LIKE ? OR customers.name LIKE ? OR customers.phone LIKE ?",
+        "CAST(orders.id AS TEXT) LIKE ? OR customers.name LIKE ? OR customers.phone LIKE ?",
         search_term, search_term, search_term
       )
     end
@@ -34,6 +34,13 @@ class OrderReceiver::OrdersController < OrderReceiver::BaseController
     
     @orders = @orders.order(created_at: :desc).page(params[:page]).per(per_page)
     @total_count = @orders.total_count
+
+    # Respond to AJAX requests with only the table partial
+    if request.headers['X-Requested-With'] == 'XMLHttpRequest'
+      render partial: 'table', layout: false
+    else
+      render :index
+    end
   end
   
   def show
@@ -55,8 +62,12 @@ class OrderReceiver::OrdersController < OrderReceiver::BaseController
     
     @order = Order.new(order_params)
     @order.created_by = current_user
+    @order.status = 'pending' # Explicitly set status
     
     if @order.save
+      # Record the initial status change
+      @order.record_status_change('created', 'pending', current_user)
+      
       redirect_to order_receiver_orders_path, notice: "Order created successfully!"
     else
       puts @order.errors.full_messages.inspect

@@ -516,7 +516,10 @@
   // =========================================
   // CALCULATIONS
   // =========================================
-  function money(n){ return '$' + (Math.max(n, 0)).toFixed(2); }
+  function money(n) {
+    // Round to nearest cent (2 decimal places) to avoid floating point issues
+    return '$' + (Math.round((Math.max(n, 0)) * 100) / 100).toFixed(2);
+  }
 
   function recalc(){
     const subtotal = items.reduce((sum, it) => {
@@ -524,22 +527,31 @@
       return sum + (p ? p.price * it.qty : 0);
     }, 0);
 
+    // Round subtotal to 2 decimal places
+    const roundedSubtotal = Math.round(subtotal * 100) / 100;
+
     const discRaw = parseFloat(document.getElementById('discountInput').value) || 0;
     let discountAmount = 0;
     let displayPercentage = 0;
 
     if(discountMode === 'pct'){
       const pct = Math.min(Math.max(discRaw, 0), 100);
-      discountAmount = subtotal * (pct / 100);
+      discountAmount = roundedSubtotal * (pct / 100);
       displayPercentage = pct;
     } else {
-      discountAmount = Math.min(Math.max(discRaw, 0), subtotal);
-      displayPercentage = subtotal > 0 ? (discountAmount / subtotal * 100) : 0;
+      discountAmount = Math.min(Math.max(discRaw, 0), roundedSubtotal);
+      displayPercentage = roundedSubtotal > 0 ? (discountAmount / roundedSubtotal * 100) : 0;
     }
 
-    const total = Math.max(subtotal - discountAmount, 0);
+    // Round discount amount to 2 decimal places
+    discountAmount = Math.round(discountAmount * 100) / 100;
+    
+    const total = Math.max(roundedSubtotal - discountAmount, 0);
+    const roundedTotal = Math.round(total * 100) / 100;
+    
     const paid = parseFloat(document.getElementById('pricePaid').value) || 0;
-    const balance = total - paid;
+    const roundedPaid = Math.round(paid * 100) / 100;
+    const balance = Math.round((roundedTotal - roundedPaid) * 100) / 100;
 
     // Discount applied field: show percentage in Fixed mode, show amount in Percentage mode
     if(discountMode === 'pct'){
@@ -548,14 +560,14 @@
       document.getElementById('discountApplied').value = displayPercentage.toFixed(1) + '%';
     }
 
-    document.getElementById('sumSubtotal').textContent = money(subtotal);
+    document.getElementById('sumSubtotal').textContent = money(roundedSubtotal);
     document.getElementById('sumDiscountLabel').textContent = discountMode === 'pct' ? `Discount (${displayPercentage}%)` : `Discount (${displayPercentage.toFixed(1)}%)`;
     document.getElementById('sumDiscount').textContent = discountAmount > 0 ? '– ' + money(discountAmount) : money(0);
-    document.getElementById('sumTotal').textContent = money(total);
+    document.getElementById('sumTotal').textContent = money(roundedTotal);
 
     const balEl = document.getElementById('balanceText');
-    if(paid <= 0){
-      balEl.textContent = money(total) + ' due';
+    if(roundedPaid <= 0){
+      balEl.textContent = money(roundedTotal) + ' due';
       balEl.className = 'val due';
     } else if(balance > 0){
       balEl.textContent = money(balance) + ' due';
@@ -566,8 +578,8 @@
     }
 
     // Set form fields
-    document.getElementById('totalPriceField').value = total.toFixed(2);
-    document.getElementById('pricePaidField').value = paid.toFixed(2);
+    document.getElementById('totalPriceField').value = roundedTotal.toFixed(2);
+    document.getElementById('pricePaidField').value = roundedPaid.toFixed(2);
     document.getElementById('statusField').value = document.getElementById('statusSelect').value;
   }
 

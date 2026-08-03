@@ -1,2 +1,237 @@
-<h1>Order Receiver Dashboard</h1>
-<p>Welcome <%= @current_user.name %></p>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "order_receiver/dashboard" %>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<% end %>
+
+<div class="dashboard-wrapper">
+  <div class="page-header">
+    <div>
+      <p class="page-eyebrow">Dashboard</p>
+      <h1 class="page-title">Order Receiver Dashboard</h1>
+      <p class="page-sub">Monitor orders and customer activity.</p>
+    </div>
+    <div class="page-actions">
+      <%= link_to order_receiver_launch_orders_path, class: "btn btn-primary" do %>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        Launch Order
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <%= link_to order_receiver_orders_path, class: "stat-card stat-link" do %>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <span class="stat-value"><%= @total_orders %></span>
+      <span class="stat-label">Total Orders</span>
+    <% end %>
+
+    <%= link_to order_receiver_orders_path(status: 'pending'), class: "stat-card stat-link pending" do %>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <span class="stat-value"><%= @pending_orders %></span>
+      <span class="stat-label">Pending</span>
+    <% end %>
+
+    <%= link_to order_receiver_orders_path(status: 'confirmed'), class: "stat-card stat-link confirmed" do %>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <span class="stat-value"><%= @confirmed_orders %></span>
+      <span class="stat-label">Confirmed</span>
+    <% end %>
+
+    <%= link_to order_receiver_orders_path(status: 'processing'), class: "stat-card stat-link processing" do %>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+      <span class="stat-value"><%= @processing_orders %></span>
+      <span class="stat-label">Processing</span>
+    <% end %>
+
+    <%= link_to order_receiver_orders_path(status: 'delivered'), class: "stat-card stat-link delivered" do %>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <span class="stat-value"><%= @delivered_orders %></span>
+      <span class="stat-label">Delivered</span>
+    <% end %>
+
+    <%= link_to order_receiver_customers_path, class: "stat-card stat-link customers" do %>
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <span class="stat-value"><%= @total_customers %></span>
+      <span class="stat-label">Total Customers</span>
+    <% end %>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-grid">
+    <div class="card chart-card">
+      <div class="card-head">
+        <h3 class="card-title">Order Status Distribution</h3>
+      </div>
+      <div class="chart-container">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card chart-card">
+      <div class="card-head">
+        <h3 class="card-title">Orders Trend (Last 7 Days)</h3>
+      </div>
+      <div class="chart-container">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Orders -->
+  <div class="card table-card">
+    <div class="card-head">
+      <h3 class="card-title">Recent Orders</h3>
+      <%= link_to "View all →", order_receiver_orders_path, class: "card-link" %>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @recent_orders.each do |order| %>
+            <tr>
+              <td><strong>#<%= order.id %></strong></td>
+              <td><%= order.customer&.name || 'N/A' %></td>
+              <td><%= order.order_items.count %></td>
+              <td>$<%= order.total_price %></td>
+              <td>
+                <span class="status-pill <%= order.status %>">
+                  <%= order.status.capitalize %>
+                </span>
+              </td>
+              <td><%= order.created_at.strftime("%b %d, %Y") %></td>
+              <td>
+                <%= link_to "View", order_receiver_order_path(order), class: "btn-edit" %>
+              </td>
+            </tr>
+          <% end %>
+          <% if @recent_orders.empty? %>
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 40px; color: var(--muted-2);">
+                No orders found
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // =========================================
+    // STATUS CHART (Donut)
+    // =========================================
+    const statusCtx = document.getElementById('statusChart')?.getContext('2d');
+    if (statusCtx) {
+      new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+          datasets: [{
+            data: <%= @status_counts[:data].to_json %>,
+            backgroundColor: [
+              '#d4a017',
+              '#4c6a8a',
+              '#7a4c96',
+              '#3c6c96',
+              '#5c7a52',
+              '#a5493a'
+            ],
+            borderWidth: 3,
+            borderColor: '#fdfbf6'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 16,
+                usePointStyle: true,
+                pointStyle: 'circle',
+                font: {
+                  family: 'Inter, sans-serif',
+                  size: 12
+                }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    // =========================================
+    // TREND CHART (Line)
+    // =========================================
+    const trendCtx = document.getElementById('trendChart')?.getContext('2d');
+    if (trendCtx) {
+      new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: <%= raw @trend_data.map { |d| d[:date] }.to_json %>,
+          datasets: [{
+            label: 'Orders',
+            data: <%= @trend_data.map { |d| d[:count] }.to_json %>,
+            borderColor: '#b3854a',
+            backgroundColor: 'rgba(179, 133, 74, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#b3854a',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1,
+                font: {
+                  family: 'Inter, sans-serif',
+                  size: 11
+                }
+              },
+              grid: {
+                color: 'rgba(0,0,0,0.06)'
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                font: {
+                  family: 'Inter, sans-serif',
+                  size: 11
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  });
+</script>

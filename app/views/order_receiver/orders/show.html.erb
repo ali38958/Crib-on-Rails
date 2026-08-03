@@ -79,9 +79,9 @@
               <tr>
                 <td>
                   <div class="prod-cell">
-                    <div class="prod-thumb" style="cursor: pointer; overflow: hidden; border-radius: 4px; background: var(--paper-2);" onclick="enlargeImage(event)">
-                      <% if item.product&.image_url.present? %>
-                        <img src="<%= item.product.image_url %>" alt="<%= item.product.name %>" style="width: 100%; height: 100%; object-fit: cover;">
+                    <div class="prod-thumb" style="cursor: pointer; overflow: hidden; border-radius: 4px; background: var(--paper-2); width: 48px; height: 48px; flex-shrink: 0;" onclick="enlargeImage(event)">
+                      <% if item.product&.image.attached? %>
+                        <%= image_tag url_for(item.product.image), alt: item.product.name, style: "width: 100%; height: 100%; object-fit: cover;" %>
                       <% else %>
                         <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 24px;">📦</div>
                       <% end %>
@@ -105,21 +105,31 @@
       <div class="card">
         <div class="card-head"><div class="card-head-left"><span class="num">03</span><h3 class="card-title">Order Timeline</h3></div></div>
         <div class="timeline">
-          <% @status_changes.each do |change| %>
-            <div class="tl-item">
-              <div class="tl-dot"></div>
-              <div class="tl-body">
-                <div class="tl-title"><%= change.new_status.capitalize %></div>
-                <div class="tl-time">
-                  <%= change.created_at.strftime("%b %d, %Y · %I:%M %p") %>
-                  <% if change.changed_by_id.present? %>
-                    · by <%= OrderReceiver.find_by(id: change.changed_by_id)&.name || 'Unknown' %>
-                  <% end %>
+          <!-- Show all status changes in chronological order -->
+          <!-- The first one will be "Created -> Pending" -->
+          <% if @status_changes.any? %>
+            <% @status_changes.each do |change| %>
+              <div class="tl-item">
+                <div class="tl-dot"></div>
+                <div class="tl-body">
+                  <div class="tl-title">
+                    <% if change.old_status == 'created' %>
+                      Order Created (Pending)
+                    <% else %>
+                      <%= change.new_status.capitalize %>
+                    <% end %>
+                  </div>
+                  <div class="tl-time">
+                    <%= change.created_at.strftime("%b %d, %Y · %I:%M %p") %>
+                    <% if change.changed_by_id.present? %>
+                      · by <%= OrderReceiver.find_by(id: change.changed_by_id)&.name || 'Unknown' %>
+                    <% end %>
+                  </div>
                 </div>
               </div>
-            </div>
-          <% end %>
-          <% if @status_changes.empty? %>
+            <% end %>
+          <% else %>
+            <!-- Fallback if no status changes exist -->
             <div class="tl-item">
               <div class="tl-dot"></div>
               <div class="tl-body">
@@ -130,7 +140,6 @@
           <% end %>
         </div>
       </div>
-
     </div>
 
     <!-- SIDEBAR -->
@@ -234,270 +243,333 @@
 </div>
 
 <script>
-  // =========================================
-  // STATUS UPDATE
-  // =========================================
-  document.addEventListener('DOMContentLoaded', function() {
-    const statusSelect = document.getElementById('statusSelect');
-    const updateBtn = document.getElementById('updateStatusBtn');
+  (function() {
+    // =========================================
+    // STATUS UPDATE
+    // =========================================
+    function initStatusUpdate() {
+      const statusSelect = document.getElementById('statusSelect');
+      const updateBtn = document.getElementById('updateStatusBtn');
 
-    if (updateBtn && statusSelect) {
-      updateBtn.addEventListener('click', function() {
-        const newStatus = statusSelect.value;
-        if (!newStatus) {
-          alert('Please select a status.');
-          return;
-        }
-
-        if (confirm(`Are you sure you want to change status to ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}?`)) {
-          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-          
-          fetch('/order_receiver/orders/<%= @order.id %>/update_status', {
-            method: 'PATCH',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest',
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'X-CSRF-Token': csrfToken
-            },
-            body: JSON.stringify({ status: newStatus })
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              if (typeof window.showNotification === 'function') {
-                window.showNotification(data.message, 'success');
-              }
-              setTimeout(() => window.location.reload(), 500);
-            } else {
-              if (typeof window.showNotification === 'function') {
-                window.showNotification(data.message, 'error');
-              }
-            }
-          })
-          .catch(() => {
-            if (typeof window.showNotification === 'function') {
-              window.showNotification('Something went wrong.', 'error');
-            }
-          });
-        }
-      });
-    }
-  });
-
-  // =========================================
-  // CANCEL MODAL
-  // =========================================
-  let countdownInterval = null;
-
-  function openCancelModal() {
-    openModal('cancelModal');
-    const confirmBtn = document.getElementById('confirmCancelBtn');
-    const timerSpan = document.getElementById('countdownTimer');
-    let countdown = 3;
-    confirmBtn.disabled = true;
-    timerSpan.textContent = countdown;
-
-    clearInterval(countdownInterval);
-    countdownInterval = setInterval(() => {
-      countdown--;
-      if (countdown <= 0) {
-        clearInterval(countdownInterval);
-        confirmBtn.disabled = false;
-        timerSpan.textContent = 'Yes';
-      } else {
-        timerSpan.textContent = countdown;
-      }
-    }, 1000);
-
-    // Store the confirm handler
-    confirmBtn.onclick = function() {
-      if (this.disabled) return;
-      confirmCancelOrder();
-    };
-  }
-
-  function confirmCancelOrder() {
-    closeModal('cancelModal');
-    clearInterval(countdownInterval);
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-
-    fetch('/order_receiver/orders/<%= @order.id %>/cancel', {
-      method: 'PATCH',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': csrfToken
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        if (typeof window.showNotification === 'function') {
-          window.showNotification(data.message, 'success');
-        }
-        setTimeout(() => window.location.reload(), 500);
-      } else {
-        if (typeof window.showNotification === 'function') {
-          window.showNotification(data.message, 'error');
-        }
-      }
-    })
-    .catch(() => {
-      if (typeof window.showNotification === 'function') {
-        window.showNotification('Something went wrong.', 'error');
-      }
-    });
-  }
-
-  // =========================================
-  // PRINT INVOICE
-  // =========================================
-  function showPrintNotification() {
-    if (typeof window.showNotification === 'function') {
-      window.showNotification('Please upgrade your plans to premium to unlock this feature.', 'info');
-    } else {
-      alert('Please upgrade your plans to premium to unlock this feature.');
-    }
-  }
-
-  // =========================================
-  // MODAL FUNCTIONS
-  // =========================================
-  function openModal(id){ document.getElementById(id).classList.add('open'); }
-  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-
-  document.querySelectorAll('.overlay').forEach(o => {
-    o.addEventListener('click', e => { if(e.target === o) o.classList.remove('open'); });
-  });
-
-  // =========================================
-  // IMAGE ENLARGEMENT
-  // =========================================
-  function enlargeImage(event) {
-    const img = event.currentTarget.querySelector('img');
-    if (!img) return;
-
-    const modal = document.createElement('div');
-    modal.className = 'overlay open';
-    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;';
-    
-    const container = document.createElement('div');
-    container.style.cssText = 'position: relative; max-width: 90vw; max-height: 90vh;';
-    
-    const enlargedImg = document.createElement('img');
-    enlargedImg.src = img.src;
-    enlargedImg.alt = img.alt;
-    enlargedImg.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;';
-    
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕';
-    closeBtn.style.cssText = 'position: absolute; top: -40px; right: 0; background: none; border: none; color: white; font-size: 28px; cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;';
-    closeBtn.onclick = () => modal.remove();
-    
-    container.appendChild(enlargedImg);
-    container.appendChild(closeBtn);
-    modal.appendChild(container);
-    modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
-    
-    document.body.appendChild(modal);
-  }
-
-  // =========================================
-  // PRICE PAID UPDATE
-  // =========================================
-  function enablePriceEdit() {
-    document.getElementById('paidDisplay').style.display = 'none';
-    document.getElementById('priceEditForm').style.display = 'flex';
-    document.getElementById('priceEditForm').style.flexDirection = 'column';
-    document.getElementById('pricePaidInput').focus();
-  }
-
-  function cancelPriceEdit() {
-    document.getElementById('priceEditForm').style.display = 'none';
-    document.getElementById('paidDisplay').style.display = 'inline';
-  }
-
-  function savePricePaid() {
-    const newPrice = parseFloat(document.getElementById('pricePaidInput').value);
-    const currentPrice = <%= @order.price_paid || 0 %>;
-    const totalPrice = <%= @order.total_price %>;
-
-    if (isNaN(newPrice)) {
-      if (typeof window.showNotification === 'function') {
-        window.showNotification('Please enter a valid price.', 'error');
-      }
-      return;
-    }
-
-    if (newPrice < currentPrice) {
-      if (typeof window.showNotification === 'function') {
-        window.showNotification('Price paid cannot be decreased.', 'error');
-      }
-      return;
-    }
-
-    if (newPrice > totalPrice) {
-      if (typeof window.showNotification === 'function') {
-        window.showNotification(`Price paid cannot exceed total price ($${totalPrice}).`, 'error');
-      }
-      return;
-    }
-
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    
-    fetch('/order_receiver/orders/<%= @order.id %>/update_price_paid', {
-      method: 'PATCH',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': csrfToken
-      },
-      body: JSON.stringify({ price_paid: newPrice })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        if (typeof window.showNotification === 'function') {
-          window.showNotification(data.message, 'success');
-        }
-        document.getElementById('paidDisplay').textContent = '$' + newPrice.toFixed(2);
-        document.getElementById('balanceDueDisplay').textContent = '$' + (totalPrice - newPrice).toFixed(2);
-        cancelPriceEdit();
-      } else {
-        if (typeof window.showNotification === 'function') {
-          window.showNotification(data.message, 'error');
-        }
-      }
-    })
-    .catch(() => {
-      if (typeof window.showNotification === 'function') {
-        window.showNotification('Something went wrong.', 'error');
-      }
-    });
-  }
-
-  // Update balance due when user changes input
-  document.addEventListener('DOMContentLoaded', function() {
-    const priceInput = document.getElementById('pricePaidInput');
-    if (priceInput) {
-      priceInput.addEventListener('input', function() {
-        const currentPrice = <%= @order.price_paid || 0 %>;
-        const totalPrice = <%= @order.total_price %>;
-        const value = parseFloat(this.value);
+      if (updateBtn && statusSelect) {
+        // Remove old listeners to prevent duplicates
+        const newBtn = updateBtn.cloneNode(true);
+        updateBtn.parentNode.replaceChild(newBtn, updateBtn);
         
-        if (!isNaN(value)) {
-          if (value < currentPrice) {
-            this.style.borderColor = 'var(--bad)';
-          } else if (value > totalPrice) {
-            this.style.borderColor = 'var(--bad)';
-          } else {
-            this.style.borderColor = 'var(--line)';
+        newBtn.addEventListener('click', function() {
+          const newStatus = statusSelect.value;
+          if (!newStatus) {
+            alert('Please select a status.');
+            return;
+          }
+
+          if (confirm(`Are you sure you want to change status to ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}?`)) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            
+            fetch('/order_receiver/orders/<%= @order.id %>/update_status', {
+              method: 'PATCH',
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+              },
+              body: JSON.stringify({ status: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                if (typeof window.showNotification === 'function') {
+                  window.showNotification(data.message, 'success');
+                }
+                setTimeout(() => window.location.reload(), 500);
+              } else {
+                if (typeof window.showNotification === 'function') {
+                  window.showNotification(data.message, 'error');
+                }
+              }
+            })
+            .catch(() => {
+              if (typeof window.showNotification === 'function') {
+                window.showNotification('Something went wrong.', 'error');
+              }
+            });
+          }
+        });
+      }
+    }
+
+    // =========================================
+    // CANCEL MODAL
+    // =========================================
+    let countdownInterval = null;
+
+    function openCancelModal() {
+      openModal('cancelModal');
+      const confirmBtn = document.getElementById('confirmCancelBtn');
+      const timerSpan = document.getElementById('countdownTimer');
+      let countdown = 3;
+      confirmBtn.disabled = true;
+      timerSpan.textContent = countdown;
+
+      clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          confirmBtn.disabled = false;
+          timerSpan.textContent = 'Yes';
+        } else {
+          timerSpan.textContent = countdown;
+        }
+      }, 1000);
+
+      // Store the confirm handler
+      confirmBtn.onclick = function() {
+        if (this.disabled) return;
+        confirmCancelOrder();
+      };
+    }
+
+    function confirmCancelOrder() {
+      closeModal('cancelModal');
+      clearInterval(countdownInterval);
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+      fetch('/order_receiver/orders/<%= @order.id %>/cancel', {
+        method: 'PATCH',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          if (typeof window.showNotification === 'function') {
+            window.showNotification(data.message, 'success');
+          }
+          setTimeout(() => window.location.reload(), 500);
+        } else {
+          if (typeof window.showNotification === 'function') {
+            window.showNotification(data.message, 'error');
           }
         }
+      })
+      .catch(() => {
+        if (typeof window.showNotification === 'function') {
+          window.showNotification('Something went wrong.', 'error');
+        }
       });
     }
-  });
+
+    // =========================================
+    // PRICE PAID UPDATE
+    // =========================================
+    function enablePriceEdit() {
+      document.getElementById('paidDisplay').style.display = 'none';
+      document.getElementById('priceEditForm').style.display = 'flex';
+      document.getElementById('priceEditForm').style.flexDirection = 'column';
+      document.getElementById('pricePaidInput').focus();
+    }
+
+    function cancelPriceEdit() {
+      document.getElementById('priceEditForm').style.display = 'none';
+      document.getElementById('paidDisplay').style.display = 'inline';
+    }
+
+    function savePricePaid() {
+      const newPrice = parseFloat(document.getElementById('pricePaidInput').value);
+      const currentPrice = <%= @order.price_paid || 0 %>;
+      const totalPrice = <%= @order.total_price %>;
+
+      if (isNaN(newPrice)) {
+        if (typeof window.showNotification === 'function') {
+          window.showNotification('Please enter a valid price.', 'error');
+        }
+        return;
+      }
+
+      if (newPrice < currentPrice) {
+        if (typeof window.showNotification === 'function') {
+          window.showNotification('Price paid cannot be decreased.', 'error');
+        }
+        return;
+      }
+
+      if (newPrice > totalPrice) {
+        if (typeof window.showNotification === 'function') {
+          window.showNotification(`Price paid cannot exceed total price ($${totalPrice}).`, 'error');
+        }
+        return;
+      }
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      
+      fetch('/order_receiver/orders/<%= @order.id %>/update_price_paid', {
+        method: 'PATCH',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({ price_paid: newPrice })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          if (typeof window.showNotification === 'function') {
+            window.showNotification(data.message, 'success');
+          }
+          document.getElementById('paidDisplay').textContent = '$' + newPrice.toFixed(2);
+          document.getElementById('balanceDueDisplay').textContent = '$' + (totalPrice - newPrice).toFixed(2);
+          cancelPriceEdit();
+        } else {
+          if (typeof window.showNotification === 'function') {
+            window.showNotification(data.message, 'error');
+          }
+        }
+      })
+      .catch(() => {
+        if (typeof window.showNotification === 'function') {
+          window.showNotification('Something went wrong.', 'error');
+        }
+      });
+    }
+
+    // =========================================
+    // MODAL FUNCTIONS
+    // =========================================
+    function openModal(id){ document.getElementById(id).classList.add('open'); }
+    function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+    // =========================================
+    // IMAGE ENLARGEMENT
+    // =========================================
+    function enlargeImage(event) {
+      const container = event.currentTarget;
+      const img = container.querySelector('img');
+      if (!img) return;
+
+      // Create modal overlay
+      const modal = document.createElement('div');
+      modal.className = 'overlay open';
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; cursor: pointer;';
+      
+      // Create image container
+      const imgContainer = document.createElement('div');
+      imgContainer.style.cssText = 'position: relative; max-width: 90vw; max-height: 90vh; animation: zoomIn 0.3s ease;';
+      
+      // Create enlarged image
+      const enlargedImg = document.createElement('img');
+      enlargedImg.src = img.src;
+      enlargedImg.alt = img.alt || 'Product image';
+      enlargedImg.style.cssText = 'max-width: 90vw; max-height: 85vh; object-fit: contain; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);';
+      
+      // Create close button
+      const closeBtn = document.createElement('button');
+      closeBtn.innerHTML = '✕';
+      closeBtn.style.cssText = 'position: absolute; top: -50px; right: -10px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 24px; cursor: pointer; padding: 8px 14px; border-radius: 50%; transition: background 0.2s ease;';
+      closeBtn.onmouseover = () => { closeBtn.style.background = 'rgba(255,255,255,0.3)'; };
+      closeBtn.onmouseout = () => { closeBtn.style.background = 'rgba(255,255,255,0.15)'; };
+      closeBtn.onclick = (e) => { e.stopPropagation(); modal.remove(); };
+      
+      // Assemble
+      imgContainer.appendChild(enlargedImg);
+      imgContainer.appendChild(closeBtn);
+      modal.appendChild(imgContainer);
+      
+      // Add zoom animation
+      if (!document.getElementById('image-modal-style')) {
+        const style = document.createElement('style');
+        style.id = 'image-modal-style';
+        style.textContent = `
+          @keyframes zoomIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      
+      // Close on click outside
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+          this.remove();
+        }
+      });
+      
+      // Close on Escape key
+      const escapeHandler = function(e) {
+        if (e.key === 'Escape') {
+          modal.remove();
+          document.removeEventListener('keydown', escapeHandler);
+        }
+      };
+      document.addEventListener('keydown', escapeHandler);
+      
+      document.body.appendChild(modal);
+    }
+
+    // =========================================
+    // INIT
+    // =========================================
+    function init() {
+      // Status update
+      initStatusUpdate();
+      
+      // Price input validation
+      const priceInput = document.getElementById('pricePaidInput');
+      if (priceInput) {
+        priceInput.addEventListener('input', function() {
+          const currentPrice = <%= @order.price_paid || 0 %>;
+          const totalPrice = <%= @order.total_price %>;
+          const value = parseFloat(this.value);
+          
+          if (!isNaN(value)) {
+            if (value < currentPrice) {
+              this.style.borderColor = 'var(--bad)';
+            } else if (value > totalPrice) {
+              this.style.borderColor = 'var(--bad)';
+            } else {
+              this.style.borderColor = 'var(--line)';
+            }
+          }
+        });
+      }
+      
+      // Modal overlay click
+      document.querySelectorAll('.overlay').forEach(o => {
+        o.addEventListener('click', e => { if(e.target === o) o.classList.remove('open'); });
+      });
+    }
+
+    // Expose global functions
+    window.openCancelModal = openCancelModal;
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.enablePriceEdit = enablePriceEdit;
+    window.cancelPriceEdit = cancelPriceEdit;
+    window.savePricePaid = savePricePaid;
+    window.enlargeImage = enlargeImage;
+    window.showPrintNotification = function() {
+      if (typeof window.showNotification === 'function') {
+        window.showNotification('Please upgrade your plans to premium to unlock this feature.', 'info');
+      } else {
+        alert('Please upgrade your plans to premium to unlock this feature.');
+      }
+    };
+
+    // Run on initial load and on Turbo navigation
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+    document.addEventListener('turbo:load', init);
+    document.addEventListener('turbo:render', init);
+  })();
 </script>
