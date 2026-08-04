@@ -114,8 +114,12 @@
 
 <script>
   (function() {
+    // Use window to persist state across Turbo navigations
+    if (typeof window._sidebarInitialized === 'undefined') {
+      window._sidebarInitialized = false;
+    }
+
     var STORAGE_KEY = 'sidebarCollapsed';
-    var sidebarEventsBound = false;
 
     function getSidebar() {
       return document.getElementById('sidebar');
@@ -168,7 +172,10 @@
     function toggleSidebar() {
       var sidebar = getSidebar();
       var collapseBtn = getCollapseButton();
-      if (!sidebar) return;
+      if (!sidebar) {
+        console.warn('Sidebar not found');
+        return;
+      }
 
       if (isMobile()) {
         var backdrop = getBackdrop();
@@ -187,12 +194,16 @@
       if (collapseBtn) {
         collapseBtn.setAttribute('aria-expanded', String(!nextCollapsed));
       }
+      
+      // Debug log to verify toggle works
+      console.log('Sidebar toggled:', nextCollapsed ? 'collapsed' : 'expanded');
     }
 
     function handleSidebarClick(event) {
       var collapseBtn = event.target.closest('#collapseBtn');
       if (collapseBtn) {
         event.preventDefault();
+        event.stopPropagation();
         toggleSidebar();
         return;
       }
@@ -216,27 +227,87 @@
 
     function initializeSidebar() {
       var sidebar = getSidebar();
-      if (!sidebar) return;
-
-      if (!sidebarEventsBound) {
-        document.addEventListener('click', handleSidebarClick);
-        window.addEventListener('resize', applySidebarState);
-        document.addEventListener('turbo:load', applySidebarState);
-        document.addEventListener('turbo:render', applySidebarState);
-        sidebarEventsBound = true;
+      if (!sidebar) {
+        console.warn('Sidebar element not found on page');
+        return;
       }
 
+      // Only attach event listeners once
+      if (!window._sidebarInitialized) {
+        console.log('Initializing sidebar event listeners');
+        
+        // Use capture phase to ensure we catch the click
+        document.addEventListener('click', handleSidebarClick, true);
+        window.addEventListener('resize', applySidebarState);
+        
+        // Also listen for Turbo events
+        document.addEventListener('turbo:load', function() {
+          console.log('Turbo:load - applying sidebar state');
+          // Small delay to ensure DOM is fully updated
+          setTimeout(applySidebarState, 50);
+        });
+        
+        document.addEventListener('turbo:render', function() {
+          console.log('Turbo:render - applying sidebar state');
+          setTimeout(applySidebarState, 50);
+        });
+        
+        window._sidebarInitialized = true;
+      }
+
+      // Always update the collapse button state
       var collapseBtn = getCollapseButton();
       if (collapseBtn) {
-        collapseBtn.setAttribute('aria-expanded', String(!sidebar.classList.contains('collapsed')));
+        var isCollapsed = sidebar.classList.contains('collapsed');
+        collapseBtn.setAttribute('aria-expanded', String(!isCollapsed));
+        console.log('Collapse button aria-expanded set to:', !isCollapsed);
       }
 
+      // Apply the state
       applySidebarState();
     }
 
-    document.addEventListener('DOMContentLoaded', initializeSidebar);
-    document.addEventListener('turbo:load', initializeSidebar);
-    document.addEventListener('turbo:render', initializeSidebar);
+    // Also add a direct click handler on the collapse button as a backup
+    function setupDirectCollapseHandler() {
+      var collapseBtn = getCollapseButton();
+      if (collapseBtn) {
+        // Remove any existing listeners to avoid duplicates
+        collapseBtn.removeEventListener('click', directToggle);
+        collapseBtn.addEventListener('click', directToggle);
+        console.log('Direct click handler added to collapse button');
+      }
+    }
+
+    function directToggle(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      console.log('Direct toggle triggered');
+      toggleSidebar();
+    }
+
+    // Initialize on DOM ready
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOMContentLoaded - initializing sidebar');
+      initializeSidebar();
+      setupDirectCollapseHandler();
+    });
+
+    // Also initialize on Turbo navigation
+    document.addEventListener('turbo:load', function() {
+      console.log('turbo:load - reinitializing sidebar');
+      initializeSidebar();
+      setupDirectCollapseHandler();
+    });
+
+    document.addEventListener('turbo:render', function() {
+      console.log('turbo:render - reinitializing sidebar');
+      initializeSidebar();
+      setupDirectCollapseHandler();
+    });
+
+    // Expose toggle function for debugging
+    window.toggleSidebar = toggleSidebar;
+    
   })();
 </script>
   
@@ -315,14 +386,17 @@
     }, duration);
   };
 
-  let flashNotificationsRendered = false;
+  //let flashNotificationsRendered = false;
+  if (typeof window.flashNotificationsRendered === 'undefined') {
+    window.flashNotificationsRendered = false;
+  }
 
   function renderFlashNotifications() {
-    if (flashNotificationsRendered) return;
+    if (window.flashNotificationsRendered) return;
 
     const flashElements = document.querySelectorAll('.flash-message');
     if (!flashElements.length || typeof window.showNotification !== 'function') {
-      flashNotificationsRendered = true;
+      window.flashNotificationsRendered = true;
       return;
     }
 
@@ -336,13 +410,13 @@
       window.showNotification(message, displayType, 2500);
     });
 
-    flashNotificationsRendered = true;
+    window.flashNotificationsRendered = true;
   }
 
   document.addEventListener('DOMContentLoaded', renderFlashNotifications);
   document.addEventListener('turbo:load', renderFlashNotifications);
   document.addEventListener('turbo:before-render', function() {
-    flashNotificationsRendered = false;
+    window.flashNotificationsRendered = false;
   });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
