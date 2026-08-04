@@ -1,3 +1,11 @@
+<% if flash[:alert] %>
+  <div class="error-messages" style="background: #fde8e8; border: 1px solid #f5c6c6; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+    <ul style="margin: 0; padding-left: 20px;">
+      <li style="color: #b25c4a; font-size: 0.9rem;"><%= flash[:alert] %></li>
+    </ul>
+  </div>
+<% end %>
+
 <% content_for :head do %>
   <%= stylesheet_link_tag "order_receiver/orders" %>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -166,40 +174,24 @@
 
 <script>
   (function() {
-    // All variables are now scoped inside this function
-    // They won't pollute the global scope or cause redeclaration errors
-    
-    // Data - initialize once
-    if (typeof window._orderLaunchInitialized === 'undefined') {
-      window._orderLaunchInitialized = false;
-    }
-
-    if (!window._orderLaunchInitialized) {
-      window._orderLaunchInitialized = true;
-
-      if (typeof window.customers === 'undefined') {
-        window.customers = [
-          <% Customer.all.each do |c| %>
-            {id: <%= c.id %>, name: '<%= j c.name %>', phone: '<%= j c.phone %>', address: '<%= j c.location || "" %>', lat: 33.6844, lng: 73.0479},
-          <% end %>
-        ];
-      }
-
-      if (typeof window.products === 'undefined') {
-        window.products = [
-          <% Product.all.each do |p| %>
-            {id: <%= p.id %>, name: '<%= j p.name %>', price: <%= p.current_price %>},
-          <% end %>
-        ];
-      }
-
-      if (typeof window.items === 'undefined' || window.items.length === 0) {
-        window.items = [{productId: null, qty: 1}];
-      }
-    }
-
-    // Local variables (scoped to this IIFE)
+    // =========================================
+    // DATA
+    // =========================================
+    let customers = [
+      <% Customer.all.each do |c| %>
+        {id: <%= c.id %>, name: '<%= j c.name %>', phone: '<%= j c.phone %>', address: '<%= j c.location || "" %>', lat: 33.6844, lng: 73.0479},
+      <% end %>
+    ];
     let selectedCustomer = null;
+
+    // Products with stock
+    let products = [
+      <% Product.all.each do |p| %>
+        {id: <%= p.id %>, name: '<%= j p.name %>', price: <%= p.current_price %>, stock: <%= p.quantity %>},
+      <% end %>
+    ];
+
+    let items = [];
     let discountMode = 'pct';
     let selectedLocationText = null;
     let lastPicked = null;
@@ -210,27 +202,20 @@
     // =========================================
     // MODALS
     // =========================================
-    function openModal(id){ 
-      const el = document.getElementById(id);
-      if (el) el.classList.add('open'); 
-    }
-    
-    function closeModal(id){ 
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('open'); 
-    }
+    function openModal(id){ document.getElementById(id).classList.add('open'); }
+    function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+    document.querySelectorAll('.overlay').forEach(o => {
+      o.addEventListener('click', e => { if(e.target === o) o.classList.remove('open'); });
+    });
 
     // =========================================
     // LOCATION
     // =========================================
     function applyLocation(text){
       selectedLocationText = text;
-      const locationInput = document.getElementById('locationInput');
-      const locationField = document.getElementById('locationField');
-      const locationError = document.getElementById('locationError');
-      if (locationInput) locationInput.value = text;
-      if (locationField) locationField.value = text;
-      if (locationError) locationError.classList.remove('show');
+      document.getElementById('locationInput').value = text;
+      document.getElementById('locationField').value = text;
+      document.getElementById('locationError').classList.remove('show');
     }
 
     // =========================================
@@ -238,39 +223,33 @@
     // =========================================
     function toggleCombo(comboId){
       const panel = document.querySelector('#' + comboId + ' .combo-panel');
-      if (!panel) return;
       const isOpen = panel.classList.contains('open');
       document.querySelectorAll('.combo-panel').forEach(p => p.classList.remove('open'));
-      if(!isOpen){ 
-        panel.classList.add('open'); 
-        renderCustomers(); 
-        const search = document.getElementById('customerSearch');
-        if (search) search.focus(); 
-      }
+      if(!isOpen){ panel.classList.add('open'); renderCustomers(); document.getElementById('customerSearch').focus(); }
     }
 
+    document.addEventListener('click', e => {
+      if(!e.target.closest('#customerCombo')) document.getElementById('customerPanel').classList.remove('open');
+    });
+
     function renderCustomers(){
-      const q = document.getElementById('customerSearch')?.value?.toLowerCase() || '';
+      const q = document.getElementById('customerSearch').value.toLowerCase();
       const list = document.getElementById('customerList');
-      if (!list) return;
-      const filtered = window.customers.filter(c => c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q));
+      const filtered = customers.filter(c => c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q));
       list.innerHTML = filtered.length ? filtered.map(c =>
-        `<div class="combo-opt" onclick="window.selectCustomer(${c.id})">
+        `<div class="combo-opt" onclick="selectCustomer(${c.id})">
           <span class="name">${c.name}</span><span class="meta">${c.phone} · ${c.address || 'No address'}</span>
         </div>`
       ).join('') : `<div class="combo-empty">No customers found</div>`;
     }
 
     function selectCustomer(id){
-      selectedCustomer = window.customers.find(c => c.id === id);
+      selectedCustomer = customers.find(c => c.id === id);
       const field = document.getElementById('customerField');
-      if (!field) return;
       field.classList.remove('placeholder');
       field.innerHTML = `${selectedCustomer.name} <span class="combo-caret">▾</span>`;
-      const customerIdField = document.getElementById('customerIdField');
-      if (customerIdField) customerIdField.value = id;
-      const panel = document.getElementById('customerPanel');
-      if (panel) panel.classList.remove('open');
+      document.getElementById('customerIdField').value = id;
+      document.getElementById('customerPanel').classList.remove('open');
 
       const locationInput = document.getElementById('locationInput');
       if(locationInput && locationInput.value.trim() === '' && selectedCustomer.address){
@@ -279,10 +258,10 @@
     }
 
     function saveNewCustomer(){
-      const name = document.getElementById('newCustName')?.value?.trim();
-      const phone = document.getElementById('newCustPhone')?.value?.trim();
-      const email = document.getElementById('newCustEmail')?.value?.trim();
-      const addr = document.getElementById('newCustAddr')?.value?.trim();
+      const name = document.getElementById('newCustName').value.trim();
+      const phone = document.getElementById('newCustPhone').value.trim();
+      const email = document.getElementById('newCustEmail').value.trim();
+      const addr = document.getElementById('newCustAddr').value.trim();
       if(!name || !phone){ alert('Name and phone are required.'); return; }
 
       fetch('/order_receiver/customers', {
@@ -298,13 +277,12 @@
       .then(data => {
         if(data.success){
           const id = data.customer.id;
-          window.customers.push({id, name, phone, address: addr || '', lat: 33.6844, lng: 73.0479});
+          customers.push({id, name, phone, address: addr || '', lat: 33.6844, lng: 73.0479});
           selectCustomer(id);
-          const inputs = ['newCustName', 'newCustPhone', 'newCustEmail', 'newCustAddr'];
-          inputs.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-          });
+          document.getElementById('newCustName').value = '';
+          document.getElementById('newCustPhone').value = '';
+          document.getElementById('newCustEmail').value = '';
+          document.getElementById('newCustAddr').value = '';
           closeModal('addCustomerModal');
           if(typeof window.showNotification === 'function') {
             window.showNotification('Customer added successfully!', 'success');
@@ -317,23 +295,12 @@
     // =========================================
     // MAP MODAL
     // =========================================
-    function confirmLocation(){
-      if(!lastPicked) return;
-      applyLocation(lastPicked.text);
-      const locationField = document.getElementById('locationField');
-      if (locationField) locationField.value = lastPicked.text;
-      closeModal('mapModal');
-    }
-
     function openMapModal(){
       openModal('mapModal');
       setTimeout(initLeaflet, 30);
     }
 
     function initLeaflet(){
-      const mapContainer = document.getElementById('leafletMap');
-      if (!mapContainer) return;
-      
       if(!leafletMap){
         const startLat = selectedCustomer ? selectedCustomer.lat : 33.6844;
         const startLng = selectedCustomer ? selectedCustomer.lng : 73.0479;
@@ -349,8 +316,7 @@
       if(selectedLocationText && lastPicked && lastPicked.lat){
         dropMarker(lastPicked.lat, lastPicked.lng);
         setFooterInfo(selectedLocationText);
-        const confirmBtn = document.getElementById('confirmLocationBtn');
-        if (confirmBtn) confirmBtn.disabled = false;
+        document.getElementById('confirmLocationBtn').disabled = false;
       }
     }
 
@@ -363,11 +329,9 @@
     function setFooterInfo(text, loading){
       const el = document.getElementById('mapFooterInfo');
       const span = document.getElementById('mapFooterText');
-      if (!el || !span) return;
       el.classList.remove('placeholder');
       span.textContent = text;
-      const confirmBtn = document.getElementById('confirmLocationBtn');
-      if (confirmBtn) confirmBtn.disabled = !!loading;
+      document.getElementById('confirmLocationBtn').disabled = !!loading;
     }
 
     async function onMapClick(e){
@@ -380,22 +344,19 @@
         const label = data.display_name || `Dropped pin · ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
         lastPicked = {text: label, lat, lng};
         setFooterInfo(label);
-        const confirmBtn = document.getElementById('confirmLocationBtn');
-        if (confirmBtn) confirmBtn.disabled = false;
+        document.getElementById('confirmLocationBtn').disabled = false;
       } catch(err){
         const label = `Dropped pin · ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
         lastPicked = {text: label, lat, lng};
         setFooterInfo(label);
-        const confirmBtn = document.getElementById('confirmLocationBtn');
-        if (confirmBtn) confirmBtn.disabled = false;
+        document.getElementById('confirmLocationBtn').disabled = false;
       }
     }
 
     function onMapSearchInput(){
-      const q = document.getElementById('mapSearchInput')?.value?.trim() || '';
+      const q = document.getElementById('mapSearchInput').value.trim();
       clearTimeout(searchDebounce);
       const box = document.getElementById('mapSuggestions');
-      if(!box) return;
       if(q.length < 3){ box.classList.remove('open'); box.innerHTML=''; return; }
       searchDebounce = setTimeout(async () => {
         try{
@@ -411,14 +372,13 @@
 
     function renderMapSuggestions(results){
       const box = document.getElementById('mapSuggestions');
-      if(!box) return;
       if(!results.length){
         box.innerHTML = `<div class="combo-empty">No matches — try a different search</div>`;
         box.classList.add('open');
         return;
       }
       box.innerHTML = results.map(r =>
-        `<div class="combo-opt" onclick='window.pickSearchResult(${r.lat}, ${r.lon}, ${JSON.stringify(r.display_name)})'>
+        `<div class="combo-opt" onclick='pickSearchResult(${r.lat}, ${r.lon}, ${JSON.stringify(r.display_name)})'>
           <span class="name">${r.display_name.split(',')[0]}</span>
           <span class="meta">${r.display_name}</span>
         </div>`
@@ -432,90 +392,143 @@
       dropMarker(lat, lng);
       setFooterInfo(label);
       lastPicked = {text: label, lat, lng};
-      const suggestions = document.getElementById('mapSuggestions');
-      if (suggestions) suggestions.classList.remove('open');
-      const searchInput = document.getElementById('mapSearchInput');
-      if (searchInput) searchInput.value = label;
-      const confirmBtn = document.getElementById('confirmLocationBtn');
-      if (confirmBtn) confirmBtn.disabled = false;
+      document.getElementById('mapSuggestions').classList.remove('open');
+      document.getElementById('mapSearchInput').value = label;
+      document.getElementById('confirmLocationBtn').disabled = false;
+    }
+
+    document.addEventListener('click', e => {
+      if(!e.target.closest('.map-search-bar')) document.getElementById('mapSuggestions').classList.remove('open');
+    });
+
+    function confirmLocation(){
+      if(!lastPicked) return;
+      applyLocation(lastPicked.text);
+      document.getElementById('locationField').value = lastPicked.text;
+      closeModal('mapModal');
     }
 
     // =========================================
-    // ORDER ITEMS
+    // ORDER ITEMS WITH STOCK VALIDATION
     // =========================================
-    function addItem(){ 
-      window.items.push({productId: null, qty: 1}); 
-      renderItems(); 
-    }
-    
-    function removeItem(idx){ 
-      window.items.splice(idx, 1); 
-      if(window.items.length === 0) window.items.push({productId: null, qty: 1}); 
-      renderItems(); 
-    }
-    
-    function setItemProduct(idx, pid){
-      window.items[idx].productId = pid; 
-      renderItems(); 
-    }
-    
+    function addItem(){ items.push({productId: null, qty: 1}); renderItems(); }
+    function removeItem(idx){ items.splice(idx, 1); if(items.length === 0) items.push({productId: null, qty: 1}); renderItems(); }
+    function setItemProduct(idx, pid){items[idx].productId = pid; renderItems(); }
     function setItemQty(idx, val){
       let v = parseInt(val) || 1;
       if(v < 1) v = 1;
-      window.items[idx].qty = v;
+      items[idx].qty = v;
       renderItems();
     }
 
     function renderItems(){
       const wrap = document.getElementById('itemsWrap');
       if(!wrap) return;
-      wrap.innerHTML = window.items.map((item, idx) => {
-        const prod = window.products.find(p => p.id === item.productId);
+      wrap.innerHTML = items.map((item, idx) => {
+        const prod = products.find(p => p.id === item.productId);
         const lineTotal = prod ? prod.price * item.qty : 0;
         return `
         <div class="item-row" data-index="${idx}">
           <div class="item-product">
             <div class="combo" id="prodCombo${idx}">
-              <button type="button" class="combo-field ${prod ? '' : 'placeholder'}" onclick="window.toggleProductCombo(${idx})">
+              <button type="button" class="combo-field ${prod ? '' : 'placeholder'}" onclick="toggleProductCombo(${idx})">
                 ${prod ? `${prod.name} · $${prod.price}` : 'Select product'}
                 <span class="combo-caret">▾</span>
               </button>
               <div class="combo-panel" id="prodPanel${idx}">
-                <div class="combo-search"><input type="text" placeholder="Search products…" oninput="window.renderProductOpts(${idx}, this.value)"></div>
+                <div class="combo-search"><input type="text" placeholder="Search products…" oninput="renderProductOpts(${idx}, this.value)"></div>
                 <div class="combo-list" id="prodList${idx}"></div>
               </div>
             </div>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+              Stock: ${prod ? prod.stock : 0} units available
+            </div>
+            <div class="stock-error" style="color: #a5493a; font-size: 12px; margin-top: 4px; display: none;"></div>
           </div>
           <div class="qty-stepper">
-            <button type="button" onclick="window.setItemQty(${idx}, ${item.qty - 1})">−</button>
-            <input type="number" name="order[order_items_attributes][${idx}][quantity]" value="${item.qty}" min="1" step="1" onchange="window.setItemQty(${idx}, this.value)">
-            <button type="button" onclick="window.setItemQty(${idx}, ${item.qty + 1})">+</button>
+            <button type="button" onclick="setItemQty(${idx}, ${item.qty - 1})">−</button>
+            <input type="number" name="order[order_items_attributes][${idx}][quantity]" value="${item.qty}" min="1" step="1" onchange="setItemQty(${idx}, this.value)">
+            <button type="button" onclick="setItemQty(${idx}, ${item.qty + 1})">+</button>
           </div>
           <div class="item-total">${prod ? '$' + lineTotal.toFixed(2) : '—'}</div>
           <input type="hidden" name="order[order_items_attributes][${idx}][product_id]" value="${item.productId || ''}">
           <input type="hidden" name="order[order_items_attributes][${idx}][price_per_unit]" value="${prod ? prod.price : ''}">
-          <button type="button" class="item-remove" onclick="window.removeItem(${idx})">✕</button>
+          <button type="button" class="item-remove" onclick="removeItem(${idx})">✕</button>
         </div>`;
       }).join('');
+      
+      // Add stock validation after render
+      document.querySelectorAll('.item-row').forEach(function(row) {
+        const select = row.querySelector('.item-product-select');
+        const qty = row.querySelector('.item-quantity');
+        const errorDiv = row.querySelector('.stock-error');
+        if (select && qty) {
+          select.addEventListener('change', function() {
+            validateStock(select, qty, errorDiv);
+            recalc();
+          });
+          qty.addEventListener('input', function() {
+            validateStock(select, qty, errorDiv);
+            recalc();
+          });
+          if (select.value) {
+            validateStock(select, qty, errorDiv);
+          }
+        }
+      });
+      
       recalc();
+    }
+
+    function validateStock(select, qty, errorDiv) {
+      const selectedOption = select.options[select.selectedIndex];
+      if (!selectedOption || !selectedOption.value) {
+        if (errorDiv) errorDiv.style.display = 'none';
+        return true;
+      }
+      
+      const maxStock = parseInt(selectedOption.dataset.stock) || 0;
+      const requestedQty = parseInt(qty.value) || 0;
+      
+      if (requestedQty > maxStock) {
+        if (errorDiv) {
+          errorDiv.textContent = `Only ${maxStock} available in stock`;
+          errorDiv.style.display = 'block';
+        }
+        qty.style.borderColor = '#a5493a';
+        return false;
+      } else {
+        if (errorDiv) errorDiv.style.display = 'none';
+        qty.style.borderColor = '';
+        return true;
+      }
     }
 
     function toggleProductCombo(idx){
       const panel = document.getElementById('prodPanel' + idx);
-      if (!panel) return;
       const isOpen = panel.classList.contains('open');
       document.querySelectorAll('.combo-panel').forEach(p => p.classList.remove('open'));
       if(!isOpen){ panel.classList.add('open'); renderProductOpts(idx, ''); }
     }
 
+    document.addEventListener('click', e => {
+      items.forEach((_, idx) => {
+        if(!e.target.closest('#prodCombo' + idx)){
+          const p = document.getElementById('prodPanel' + idx);
+          if(p) p.classList.remove('open');
+        }
+      });
+    });
+
     function renderProductOpts(idx, q){
       q = (q || '').toLowerCase();
       const list = document.getElementById('prodList' + idx);
       if(!list) return;
-      const filtered = window.products.filter(p => p.name.toLowerCase().includes(q));
+      const filtered = products.filter(p => p.name.toLowerCase().includes(q));
       list.innerHTML = filtered.length ? filtered.map(p =>
-        `<div class="combo-opt" onclick="window.setItemProduct(${idx}, ${p.id})">
-          <span class="name">${p.name}</span><span class="meta">$${p.price} / unit</span>
+        `<div class="combo-opt" onclick="setItemProduct(${idx}, ${p.id})">
+          <span class="name">${p.name}</span>
+          <span class="meta">$${p.price} / unit · Stock: ${p.stock}</span>
         </div>`
       ).join('') : `<div class="combo-empty">No products found</div>`;
     }
@@ -530,23 +543,19 @@
       const discountInput = document.getElementById('discountInput');
       const discInputLabel = document.getElementById('discInputLabel');
       
-      if (pctBtn) pctBtn.classList.toggle('active', mode === 'pct');
-      if (cashBtn) cashBtn.classList.toggle('active', mode === 'cash');
+      pctBtn.classList.toggle('active', mode === 'pct');
+      cashBtn.classList.toggle('active', mode === 'cash');
       
       if(mode === 'pct'){
-        if (discInputLabel) discInputLabel.textContent = 'Discount (%)';
-        if (discountInput) {
-          discountInput.placeholder = '0';
-          discountInput.disabled = false;
-          discountInput.value = '';
-        }
+        discInputLabel.textContent = 'Discount (%)';
+        discountInput.placeholder = '0';
+        discountInput.disabled = false;
+        discountInput.value = '';
       } else {
-        if (discInputLabel) discInputLabel.textContent = 'Discount ($)';
-        if (discountInput) {
-          discountInput.placeholder = '0.00';
-          discountInput.disabled = false;
-          discountInput.value = '';
-        }
+        discInputLabel.textContent = 'Discount ($)';
+        discountInput.placeholder = '0.00';
+        discountInput.disabled = false;
+        discountInput.value = '';
       }
       
       recalc();
@@ -555,20 +564,17 @@
     // =========================================
     // CALCULATIONS
     // =========================================
-    function money(n) {
-      return '$' + (Math.round((Math.max(n, 0)) * 100) / 100).toFixed(2);
-    }
+    function money(n){ return '$' + (Math.round((Math.max(n, 0)) * 100) / 100).toFixed(2); }
 
     function recalc(){
-      const subtotal = window.items.reduce((sum, it) => {
-        const p = window.products.find(pr => pr.id === it.productId);
+      const subtotal = items.reduce((sum, it) => {
+        const p = products.find(pr => pr.id === it.productId);
         return sum + (p ? p.price * it.qty : 0);
       }, 0);
 
       const roundedSubtotal = Math.round(subtotal * 100) / 100;
 
-      const discountInput = document.getElementById('discountInput');
-      const discRaw = parseFloat(discountInput?.value) || 0;
+      const discRaw = parseFloat(document.getElementById('discountInput').value) || 0;
       let discountAmount = 0;
       let displayPercentage = 0;
 
@@ -585,125 +591,63 @@
       const total = Math.max(roundedSubtotal - discountAmount, 0);
       const roundedTotal = Math.round(total * 100) / 100;
       
-      const pricePaidInput = document.getElementById('pricePaid');
-      const paid = parseFloat(pricePaidInput?.value) || 0;
+      const paid = parseFloat(document.getElementById('pricePaid').value) || 0;
       const roundedPaid = Math.round(paid * 100) / 100;
       const balance = Math.round((roundedTotal - roundedPaid) * 100) / 100;
 
-      const discountApplied = document.getElementById('discountApplied');
-      if (discountApplied) {
-        if(discountMode === 'pct'){
-          discountApplied.value = money(discountAmount);
-        } else {
-          discountApplied.value = displayPercentage.toFixed(1) + '%';
-        }
+      if(discountMode === 'pct'){
+        document.getElementById('discountApplied').value = money(discountAmount);
+      } else {
+        document.getElementById('discountApplied').value = displayPercentage.toFixed(1) + '%';
       }
 
-      const sumSubtotal = document.getElementById('sumSubtotal');
-      const sumDiscountLabel = document.getElementById('sumDiscountLabel');
-      const sumDiscount = document.getElementById('sumDiscount');
-      const sumTotal = document.getElementById('sumTotal');
-      
-      if (sumSubtotal) sumSubtotal.textContent = money(roundedSubtotal);
-      if (sumDiscountLabel) sumDiscountLabel.textContent = discountMode === 'pct' ? `Discount (${displayPercentage}%)` : `Discount (${displayPercentage.toFixed(1)}%)`;
-      if (sumDiscount) sumDiscount.textContent = discountAmount > 0 ? '– ' + money(discountAmount) : money(0);
-      if (sumTotal) sumTotal.textContent = money(roundedTotal);
+      document.getElementById('sumSubtotal').textContent = money(roundedSubtotal);
+      document.getElementById('sumDiscountLabel').textContent = discountMode === 'pct' ? `Discount (${displayPercentage}%)` : `Discount (${displayPercentage.toFixed(1)}%)`;
+      document.getElementById('sumDiscount').textContent = discountAmount > 0 ? '– ' + money(discountAmount) : money(0);
+      document.getElementById('sumTotal').textContent = money(roundedTotal);
 
       const balEl = document.getElementById('balanceText');
-      if (balEl) {
-        if(roundedPaid <= 0){
-          balEl.textContent = money(roundedTotal) + ' due';
-          balEl.className = 'val due';
-        } else if(balance > 0){
-          balEl.textContent = money(balance) + ' due';
-          balEl.className = 'val due';
-        } else {
-          balEl.textContent = balance < 0 ? money(-balance) + ' overpaid' : 'Paid in full';
-          balEl.className = 'val paid';
-        }
+      if(roundedPaid <= 0){
+        balEl.textContent = money(roundedTotal) + ' due';
+        balEl.className = 'val due';
+      } else if(balance > 0){
+        balEl.textContent = money(balance) + ' due';
+        balEl.className = 'val due';
+      } else {
+        balEl.textContent = balance < 0 ? money(-balance) + ' overpaid' : 'Paid in full';
+        balEl.className = 'val paid';
       }
 
-      const totalPriceField = document.getElementById('totalPriceField');
-      const pricePaidField = document.getElementById('pricePaidField');
-      const statusField = document.getElementById('statusField');
-      const statusSelect = document.getElementById('statusSelect');
-      
-      if (totalPriceField) totalPriceField.value = roundedTotal.toFixed(2);
-      if (pricePaidField) pricePaidField.value = roundedPaid.toFixed(2);
-      if (statusField && statusSelect) statusField.value = statusSelect.value;
+      document.getElementById('totalPriceField').value = roundedTotal.toFixed(2);
+      document.getElementById('pricePaidField').value = roundedPaid.toFixed(2);
+      document.getElementById('statusField').value = document.getElementById('statusSelect').value;
     }
 
     // =========================================
     // INIT
     // =========================================
-    function initializePage() {
-      const locationInput = document.getElementById('locationInput');
-      if (locationInput) {
-        locationInput.addEventListener('input', function() {
-          selectedLocationText = this.value;
-          const locationField = document.getElementById('locationField');
-          if (locationField) locationField.value = this.value;
-          if(this.value.trim()) {
-            const locationError = document.getElementById('locationError');
-            if (locationError) locationError.classList.remove('show');
-          }
-        });
-      }
+    document.addEventListener('DOMContentLoaded', function(){
+      document.getElementById('locationInput')?.addEventListener('input', function() {
+        selectedLocationText = this.value;
+        document.getElementById('locationField').value = this.value;
+        if(this.value.trim()) {
+          document.getElementById('locationError').classList.remove('show');
+        }
+      });
 
       renderItems();
       recalc();
-    }
-
-    // Event listeners - only add them once
-    if (!window._orderLaunchEventsAdded) {
-      window._orderLaunchEventsAdded = true;
-      
-      // Modal backdrop clicks
-      document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.overlay').forEach(o => {
-          o.addEventListener('click', e => { 
-            if(e.target === o) o.classList.remove('open'); 
-          });
-        });
-      });
-
-      // Document click for closing combos
-      document.addEventListener('click', function(e) {
-        if(!e.target.closest('#customerCombo')) {
-          const panel = document.getElementById('customerPanel');
-          if (panel) panel.classList.remove('open');
-        }
-        
-        window.items.forEach((_, idx) => {
-          if(!e.target.closest('#prodCombo' + idx)){
-            const p = document.getElementById('prodPanel' + idx);
-            if(p) p.classList.remove('open');
-          }
-        });
-
-        if(!e.target.closest('.map-search-bar')) {
-          const suggestions = document.getElementById('mapSuggestions');
-          if (suggestions) suggestions.classList.remove('open');
-        }
-      });
-    }
-
-    // Run on DOM ready and Turbo navigation
-    document.addEventListener('DOMContentLoaded', initializePage);
-    document.addEventListener('turbo:load', initializePage);
-
-    // Clean up leaflet map on navigation
-    document.addEventListener('turbo:before-render', function() {
-      if (leafletMap) {
-        leafletMap.remove();
-        leafletMap = null;
-        marker = null;
-      }
     });
 
-    // Expose functions globally (needed for onclick in HTML)
+    // Expose functions globally
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.toggleCombo = toggleCombo;
+    window.renderCustomers = renderCustomers;
     window.selectCustomer = selectCustomer;
     window.saveNewCustomer = saveNewCustomer;
+    window.openMapModal = openMapModal;
+    window.onMapSearchInput = onMapSearchInput;
     window.pickSearchResult = pickSearchResult;
     window.confirmLocation = confirmLocation;
     window.addItem = addItem;
@@ -714,12 +658,5 @@
     window.renderProductOpts = renderProductOpts;
     window.setDiscountMode = setDiscountMode;
     window.recalc = recalc;
-    window.openModal = openModal;
-    window.closeModal = closeModal;
-    window.toggleCombo = toggleCombo;
-    window.renderCustomers = renderCustomers;
-    window.openMapModal = openMapModal;
-    window.onMapSearchInput = onMapSearchInput;
-    
-  })(); // End of IIFE
+  })();
 </script>

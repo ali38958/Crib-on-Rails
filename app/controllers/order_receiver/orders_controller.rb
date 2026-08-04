@@ -46,7 +46,7 @@ class OrderReceiver::OrdersController < OrderReceiver::BaseController
   def show
     @order = Order.find(params[:id])
     @order.reload
-    @status_changes = @order.status_changes.order(created_at: :desc)
+    @status_changes = @order.status_changes.order(created_at: :asc)
     @can_update_status = !@order.completed?
   end
   
@@ -56,27 +56,20 @@ class OrderReceiver::OrdersController < OrderReceiver::BaseController
   end
   
   def create_order
-    puts "===== FULL PARAMS ====="
-    puts params.inspect
-    puts "======================"
-    
     @order = Order.new(order_params)
     @order.created_by = current_user
-    @order.status = 'pending' # Explicitly set status
+    @order.status = 'pending'
     
     if @order.save
-      # Record the initial status change
       @order.record_status_change('created', 'pending', current_user)
-      
       redirect_to order_receiver_orders_path, notice: "Order created successfully!"
     else
-      puts @order.errors.full_messages.inspect
+      flash.now[:alert] = @order.errors.full_messages.join(", ")
       render :launch, status: :unprocessable_entity
     end
   end
   
   def edit
-    # Edit order - you can use launch partial or create a separate edit view
     render :edit
   end
 

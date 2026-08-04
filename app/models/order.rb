@@ -8,6 +8,11 @@ class Order < ApplicationRecord
 
   accepts_nested_attributes_for :order_items, allow_destroy: true, reject_if: :all_blank
 
+  # Validate stock before saving
+  validate :validate_stock_availability, on: :create
+  
+  after_create :reduce_stock_after_create
+  
   enum :status, {
     pending: 0,
     confirmed: 1,
@@ -55,7 +60,6 @@ class Order < ApplicationRecord
   end
   
   before_save :calculate_total, if: -> { total_price.nil? }
-  before_save :set_updated_by, if: -> { updated_by_id_changed? }
   
   private
   
@@ -63,7 +67,17 @@ class Order < ApplicationRecord
     self.total_price = subtotal
   end
   
-  def set_updated_by
-    # This will be set in controller, but we can auto-set if needed
+  def validate_stock_availability
+    order_items.each do |item|
+      if item.product && item.quantity > item.product.quantity
+        errors.add(:base, "Not enough stock for #{item.product.name}. Only #{item.product.quantity} available.")
+      end
+    end
+  end
+  
+  def reduce_stock_after_create
+    order_items.each do |item|
+      item.product.decrement!(:quantity, item.quantity)
+    end
   end
 end
