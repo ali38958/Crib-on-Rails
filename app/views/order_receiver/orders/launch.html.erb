@@ -535,7 +535,6 @@
 
     // =========================================
     // DISCOUNT
-    // =========================================
     function setDiscountMode(mode){
       discountMode = mode;
       const pctBtn = document.getElementById('discPctBtn');
@@ -563,7 +562,6 @@
 
     // =========================================
     // CALCULATIONS
-    // =========================================
     function money(n){ return '$' + (Math.round((Math.max(n, 0)) * 100) / 100).toFixed(2); }
 
     function recalc(){
@@ -625,7 +623,6 @@
 
     // =========================================
     // INIT
-    // =========================================
     document.addEventListener('DOMContentLoaded', function(){
       document.getElementById('locationInput')?.addEventListener('input', function() {
         selectedLocationText = this.value;
