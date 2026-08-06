@@ -182,7 +182,6 @@
 
     // =========================================
     // STATUS CHART (Donut) with custom side legend
-    // =========================================
     const statusCtx = statusCanvas?.getContext('2d');
     if (statusCtx) {
       const statusData = <%= raw @status_counts[:data].to_json %>;
@@ -212,7 +211,6 @@
 
     // =========================================
     // TREND CHART (Line)
-    // =========================================
     const trendCtx = trendCanvas?.getContext('2d');
     if (trendCtx) {
       window.trendChartInstance = new Chart(trendCtx, {
