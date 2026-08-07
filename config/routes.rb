@@ -7,6 +7,11 @@ Rails.application.routes.draw do
   get '/logout', to: 'sessions#destroy'
   delete '/logout', to: 'sessions#destroy'
   
+  get '/forgot_password', to: 'login#forgot_password'
+  post '/password_resets', to: 'password_resets#create'
+  post '/password_resets/verify', to: 'password_resets#verify'
+  post '/password_resets/update_password', to: 'password_resets#update_password'
+  
   get '/dashboard', to: 'dashboards#index'
   
   namespace :admin do

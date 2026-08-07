@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_02_104620) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_07_120000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -105,6 +105,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_104620) do
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["status"], name: "index_orders_on_status"
     t.index ["updated_by_id"], name: "index_orders_on_updated_by_id"
+  end
+
+  create_table "password_resets", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.string "otp_digest", null: false
+    t.datetime "updated_at", null: false
+    t.string "user_id", null: false
+    t.string "user_type", null: false
+    t.index ["user_type", "user_id"], name: "index_password_resets_on_user_type_and_user_id"
   end
 
   create_table "price_changes", force: :cascade do |t|
