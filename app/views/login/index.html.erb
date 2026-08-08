@@ -46,7 +46,6 @@
         </div>
 
         <button type="submit" class="login-submit">Sign in</button>
-        <div id="login-error" class="login-error" style="display:none;"></div>
       </form>
     </div>
   </section>
@@ -88,7 +87,6 @@
     
     const identifier = document.getElementById('identifier').value;
     const password = document.getElementById('password').value;
-    const errorDiv = document.getElementById('login-error');
     
     try {
       const response = await fetch('/login', {
@@ -110,14 +108,11 @@
       } else {
         // Show error notification
         const message = data.message || 'Login failed';
-        window.showNotification(message, 'error', 2000);
-        errorDiv.style.display = 'block';
-        errorDiv.textContent = message;
+        window.showNotification(message, 'fail', 2000);
       }
       
     } catch (error) {
-      errorDiv.style.display = 'block';
-      errorDiv.textContent = 'Login failed';
+      window.showNotification('Login failed', 'fail', 2000);
     }
   });
 </script>
