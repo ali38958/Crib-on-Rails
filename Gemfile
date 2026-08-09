@@ -14,6 +14,8 @@ gem 'fiddle'
 gem 'bcrypt'
 gem 'jwt'
 gem 'dotenv-rails'
+gem 'csv'
+
 gem 'dartsass-rails'
 gem 'kaminari', github: 'kaminari/kaminari'
 

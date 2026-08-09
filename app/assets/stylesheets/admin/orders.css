@@ -1,0 +1,438 @@
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.page-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 32px;
+    margin: 0;
+    color: var(--ink);
+    letter-spacing: -.01em;
+}
+
+.page-sub {
+    color: var(--muted);
+    font-size: 14.5px;
+    margin: 4px 0 0;
+}
+
+.page-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 10px 18px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all .15s ease;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--charcoal);
+    color: var(--paper);
+}
+
+.btn-primary:hover {
+    background: var(--ink);
+}
+
+.btn-secondary {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--charcoal);
+}
+
+.btn-secondary:hover {
+    background: var(--paper-2);
+    border-color: var(--brass);
+}
+
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.stat-card {
+    background: #fdfbf6;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 1px 2px rgba(28, 26, 24, .04);
+}
+
+.stat-card .stat-value {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 28px;
+    color: var(--ink);
+    line-height: 1.2;
+}
+
+.stat-card .stat-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+/* Charts */
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-bottom: 28px;
+}
+
+.chart-card {
+    padding: 24px 26px;
+    background: #fdfbf6;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(28, 26, 24, .04);
+}
+
+.chart-card .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.chart-card .card-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin: 0;
+    color: var(--ink);
+}
+
+.chart-container {
+    position: relative;
+    height: 350px; /* increased height for better visual space */
+}
+
+/* Ensure canvas fills the chart container */
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
+/* Filters */
+.filters-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: #fbf9f4;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+}
+
+.filters-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filter-input {
+    padding: 8px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink);
+    background: var(--paper-2);
+    border: 1px solid var(--paper-3);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.filter-input:focus {
+    border-color: var(--brass);
+    background: #fff;
+}
+
+.filter-select {
+    padding: 8px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink);
+    background: var(--paper-2);
+    border: 1px solid var(--paper-3);
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.filter-select:focus {
+    border-color: var(--brass);
+    background: #fff;
+}
+
+.filters-right {
+    display: flex;
+    align-items: center;
+}
+
+.results-count {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+/* Table */
+.panel-card {
+    background: #fdfbf6;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(28, 26, 24, .04);
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table-responsive table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-responsive thead th {
+    text-align: left;
+    padding: 14px 20px;
+    background: var(--paper-2);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.table-responsive tbody td {
+    padding: 14px 20px;
+    font-size: 14px;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+}
+
+.table-responsive tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-responsive tbody tr:hover {
+    background: rgba(179, 133, 74, 0.04);
+}
+
+/* Status Pills */
+.status-pill {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.status-pill.pending {
+    background: rgba(212, 160, 23, 0.14);
+    color: #d4a017;
+}
+
+.status-pill.confirmed {
+    background: rgba(76, 106, 138, 0.14);
+    color: #4c6a8a;
+}
+
+.status-pill.processing {
+    background: rgba(122, 76, 150, 0.14);
+    color: #7a4c96;
+}
+
+.status-pill.shipped {
+    background: rgba(60, 108, 150, 0.14);
+    color: #3c6c96;
+}
+
+.status-pill.delivered {
+    background: rgba(92, 122, 82, 0.14);
+    color: #5c7a52;
+}
+
+.status-pill.cancelled {
+    background: rgba(165, 73, 58, 0.14);
+    color: #a5493a;
+}
+
+/* Pagination */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+    padding: 16px 0;
+}
+
+.pagination {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination li {
+    display: inline-block;
+}
+
+.pagination a,
+.pagination .current {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+    background: var(--paper-2);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.pagination a:hover {
+    background: var(--brass);
+    color: var(--paper);
+    border-color: var(--brass);
+}
+
+.pagination .current {
+    background: var(--brass);
+    color: var(--paper);
+    border-color: var(--brass);
+}
+
+.pagination .disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filters-left {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-group {
+        width: 100%;
+    }
+
+    .filter-input,
+    .filter-select {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-actions {
+        width: 100%;
+    }
+
+    .page-actions .btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-title {
+        font-size: 24px;
+    }
+
+    .table-responsive tbody td,
+    .table-responsive thead th {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+}
+
+@media print {
+    .page-actions,
+    .filters-bar,
+    .pagination-container {
+        display: none !important;
+    }
+    
+    body, .panel-card, .chart-card, .stat-card {
+        box-shadow: none !important;
+        border: none !important;
+        background: transparent !important;
+    }
+    
+    .panel-card, .chart-card, .stat-card {
+        page-break-inside: avoid;
+    }
+}

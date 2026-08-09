@@ -1,0 +1,289 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "admin/orders" %>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<% end %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Orders Report</h1>
+    <p class="page-sub">View and analyze all orders.</p>
+  </div>
+  <div class="page-actions">
+    <%= link_to "Export CSV", export_csv_admin_orders_path(request.query_parameters.merge(format: :csv)), class: "btn btn-primary" %>
+    <!-- <button onclick="window.print()" class="btn btn-secondary">Print Report</button> -->
+  </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-value"><%= @total_orders %></span>
+    <span class="stat-label">Total Orders</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-value">$<%= number_with_precision(@total_revenue, precision: 2) %></span>
+    <span class="stat-label">Total Revenue</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-value">$<%= number_with_precision(@avg_order_value, precision: 2) %></span>
+    <span class="stat-label">Average Order Value</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-value"><%= Order.where(status: 'pending').count %></span>
+    <span class="stat-label">Pending Orders</span>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+  <div class="card chart-card">
+    <div class="card-head">
+      <h3 class="card-title">Orders by Status</h3>
+    </div>
+    <div class="chart-container">
+      <canvas id="statusChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="card-head">
+      <h3 class="card-title">Revenue Trend (Last 7 Days)</h3>
+    </div>
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+  <div class="filters-left">
+    <div class="filter-group">
+      <input type="date" id="dateFrom" class="filter-input" value="<%= params[:date_from] %>" placeholder="From">
+      <span style="margin: 0 4px; color: var(--muted);">to</span>
+      <input type="date" id="dateTo" class="filter-input" value="<%= params[:date_to] %>" placeholder="To">
+    </div>
+
+    <div class="filter-group">
+      <select id="statusFilter" class="filter-select">
+        <option value="all" <%= 'selected' if params[:status].blank? || params[:status] == 'all' %>>All Status</option>
+        <option value="pending" <%= 'selected' if params[:status] == 'pending' %>>Pending</option>
+        <option value="confirmed" <%= 'selected' if params[:status] == 'confirmed' %>>Confirmed</option>
+        <option value="processing" <%= 'selected' if params[:status] == 'processing' %>>Processing</option>
+        <option value="shipped" <%= 'selected' if params[:status] == 'shipped' %>>Shipped</option>
+        <option value="delivered" <%= 'selected' if params[:status] == 'delivered' %>>Delivered</option>
+        <option value="cancelled" <%= 'selected' if params[:status] == 'cancelled' %>>Cancelled</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <select id="customerFilter" class="filter-select">
+        <option value="">All Customers</option>
+        <% @customers.each do |customer| %>
+          <option value="<%= customer.id %>" <%= 'selected' if params[:customer_id].to_i == customer.id %>>
+            <%= customer.name %>
+          </option>
+        <% end %>
+      </select>
+    </div>
+
+    <button id="applyFiltersBtn" class="btn btn-sm btn-primary">Apply</button>
+    <button id="clearFiltersBtn" class="btn btn-sm btn-secondary">Clear</button>
+
+    <div class="filter-group">
+      <select id="perPageSelect" class="filter-select">
+        <option value="10" <%= 'selected' if params[:per_page].to_i == 10 || params[:per_page].blank? %>>10 per page</option>
+        <option value="25" <%= 'selected' if params[:per_page].to_i == 25 %>>25 per page</option>
+        <option value="50" <%= 'selected' if params[:per_page].to_i == 50 %>>50 per page</option>
+        <option value="100" <%= 'selected' if params[:per_page].to_i == 100 %>>100 per page</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="filters-right">
+    <span class="results-count"><%= @total_count %> orders found</span>
+  </div>
+</div>
+
+<!-- Orders Table -->
+<div class="panel-card">
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Created By</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @orders.any? %>
+          <% @orders.each do |order| %>
+            <tr>
+              <td><strong>#<%= order.id %></strong></td>
+              <td><%= order.customer&.name || 'N/A' %></td>
+              <td><%= order.order_items.count %></td>
+              <td>$<%= number_with_precision(order.total_price, precision: 2) %></td>
+              <td>
+                <span class="status-pill <%= order.status %>">
+                  <%= order.status.capitalize %>
+                </span>
+              </td>
+              <td><%= order.created_by&.name || '-' %></td>
+              <td><%= order.created_at.strftime("%b %d, %Y") %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 40px; color: var(--muted-2);">
+              No orders found
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+<% if @orders.total_pages > 1 %>
+  <div class="pagination-container">
+    <%= paginate @orders, 
+        param_name: :page,
+        window: 2,
+        outer_window: 1,
+        params: params.permit(:date_from, :date_to, :status, :customer_id, :per_page) %>
+  </div>
+<% end %>
+
+<script>
+  document.addEventListener('turbo:load', function() {
+    // =========================================
+    // STATUS CHART
+    // =========================================
+    const statusCtx = document.getElementById('statusChart')?.getContext('2d');
+    if (statusCtx) {
+      new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+          labels: <%= raw @status_data[:labels].to_json %>,
+          datasets: [{
+            data: <%= raw @status_data[:data].to_json %>,
+            backgroundColor: [
+              '#d4a017', '#4c6a8a', '#7a4c96', '#3c6c96', '#5c7a52', '#a5493a'
+            ],
+            borderWidth: 3,
+            borderColor: '#fdfbf6'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 16,
+                usePointStyle: true,
+                font: { family: 'Inter, sans-serif', size: 12 }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    // =========================================
+    // TREND CHART
+    // =========================================
+    const trendCtx = document.getElementById('trendChart')?.getContext('2d');
+    if (trendCtx) {
+      new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: <%= raw @trend_data.map { |d| d[:date] }.to_json %>,
+          datasets: [{
+            label: 'Revenue ($)',
+            data: <%= raw @trend_data.map { |d| d[:amount].to_f.round(2) }.to_json %>,
+            borderColor: '#b3854a',
+            backgroundColor: 'rgba(179, 133, 74, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#b3854a',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                font: { family: 'Inter, sans-serif', size: 11 },
+                callback: function(value) { return '$' + value.toFixed(0); }
+              },
+              grid: { color: 'rgba(0,0,0,0.06)' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Inter, sans-serif', size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // =========================================
+    // FILTERS
+    // =========================================
+    function applyFilters() {
+      const params = new URLSearchParams();
+      const dateFrom = document.getElementById('dateFrom').value;
+      const dateTo = document.getElementById('dateTo').value;
+      const status = document.getElementById('statusFilter').value;
+      const customer = document.getElementById('customerFilter').value;
+      const perPage = document.getElementById('perPageSelect').value;
+
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
+      if (status && status !== 'all') params.set('status', status);
+      if (customer) params.set('customer_id', customer);
+      if (perPage) params.set('per_page', perPage);
+      params.set('page', 1);
+
+      window.location.href = window.location.pathname + '?' + params.toString();
+    }
+
+    function clearFilters() {
+      window.location.href = window.location.pathname;
+    }
+
+    document.getElementById('applyFiltersBtn')?.addEventListener('click', applyFilters);
+    document.getElementById('clearFiltersBtn')?.addEventListener('click', clearFilters);
+    document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+    document.getElementById('customerFilter')?.addEventListener('change', applyFilters);
+    document.getElementById('perPageSelect')?.addEventListener('change', applyFilters);
+
+    let timeout;
+    document.getElementById('dateFrom')?.addEventListener('input', function() {
+      clearTimeout(timeout);
+      timeout = setTimeout(applyFilters, 500);
+    });
+    document.getElementById('dateTo')?.addEventListener('input', function() {
+      clearTimeout(timeout);
+      timeout = setTimeout(applyFilters, 500);
+    });
+  });
+</script>

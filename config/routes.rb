@@ -13,18 +13,30 @@ Rails.application.routes.draw do
   post '/password_resets/update_password', to: 'password_resets#update_password'
   
   get '/dashboard', to: 'dashboards#index'
-  
+
   namespace :admin do
     get '/', to: 'dashboard#index'
-    
-    resources :users, only: [:index, :create, :update, :destroy] do
+    resources :users, only: [:index, :new, :create, :edit, :update, :destroy] do
       member do
-        get 'edit/:role', to: 'users#edit'
+        get 'edit/:role', to: 'users#edit', as: 'edit_by_role'
         patch ':role', to: 'users#update'
         delete ':role', to: 'users#destroy'
       end
       collection do
-        get 'new/:role', to: 'users#new'
+        get 'new/:role', to: 'users#new', as: 'new_by_role'
+        post 'create/:role', to: 'users#create', as: 'create_by_role'
+      end
+    end
+    resources :orders, only: [:index] do
+      collection do
+        get 'export_csv'
+      end
+    end
+      
+    resources :stocks, only: [:index] do
+      collection do
+        get 'export_csv'
+        get 'export_pdf'
       end
     end
   end

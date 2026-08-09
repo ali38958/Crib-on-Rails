@@ -1,0 +1,280 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "admin/stocks" %>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<% end %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Stock Report</h1>
+    <p class="page-sub">Monitor inventory levels and stock values.</p>
+  </div>
+  <div class="page-actions">
+    <%= link_to "Export CSV", export_csv_admin_stocks_path(request.query_parameters), class: "btn btn-primary" %>
+    <%= link_to "Export PDF", export_pdf_admin_stocks_path(request.query_parameters), class: "btn btn-secondary" %>
+  </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-value"><%= @total_products %></span>
+    <span class="stat-label">Total Products</span>
+  </div>
+  <div class="stat-card low">
+    <span class="stat-value" style="color: #d4a017;"><%= @low_stock %></span>
+    <span class="stat-label">Low Stock (< 10)</span>
+  </div>
+  <div class="stat-card out">
+    <span class="stat-value" style="color: #a5493a;"><%= @out_of_stock %></span>
+    <span class="stat-label">Out of Stock</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-value">$<%= number_with_precision(@total_value, precision: 2) %></span>
+    <span class="stat-label">Total Inventory Value</span>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+  <div class="card chart-card">
+    <div class="card-head">
+      <h3 class="card-title">Stock by Category</h3>
+    </div>
+    <div class="chart-container">
+      <canvas id="categoryChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="card-head">
+      <h3 class="card-title">Stock Status</h3>
+    </div>
+    <div class="chart-container">
+      <canvas id="statusChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+  <div class="filters-left">
+    <div class="filter-group">
+      <input type="text" id="searchInput" placeholder="Search products..." value="<%= params[:search] %>" class="filter-input">
+    </div>
+
+    <div class="filter-group">
+      <select id="categoryFilter" class="filter-select">
+        <option value="">All Categories</option>
+        <% @categories.each do |category| %>
+          <option value="<%= category.id %>" <%= 'selected' if params[:category_id].to_i == category.id %>>
+            <%= category.name %>
+          </option>
+        <% end %>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <select id="stockFilter" class="filter-select">
+        <option value="">All Stock</option>
+        <option value="in" <%= 'selected' if params[:stock_filter] == 'in' %>>In Stock (≥ 10)</option>
+        <option value="low" <%= 'selected' if params[:stock_filter] == 'low' %>>Low Stock (< 10)</option>
+        <option value="out" <%= 'selected' if params[:stock_filter] == 'out' %>>Out of Stock (0)</option>
+      </select>
+    </div>
+
+    <button id="applyFiltersBtn" class="btn btn-sm btn-primary">Apply</button>
+    <button id="clearFiltersBtn" class="btn btn-sm btn-secondary">Clear</button>
+
+    <div class="filter-group">
+      <select id="perPageSelect" class="filter-select">
+        <option value="10" <%= 'selected' if params[:per_page].to_i == 10 || params[:per_page].blank? %>>10 per page</option>
+        <option value="25" <%= 'selected' if params[:per_page].to_i == 25 %>>25 per page</option>
+        <option value="50" <%= 'selected' if params[:per_page].to_i == 50 %>>50 per page</option>
+        <option value="100" <%= 'selected' if params[:per_page].to_i == 100 %>>100 per page</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="filters-right">
+    <span class="results-count"><%= @total_count %> products found</span>
+  </div>
+</div>
+
+<!-- Products Table -->
+<div class="panel-card">
+  <div class="table-responsive">
+    <table>
+        <thead>
+        <tr>
+            <th><%= link_to "Product", request.params.merge(sort: 'name', direction: params[:direction] == 'asc' && params[:sort] == 'name' ? 'desc' : 'asc') %></th>
+            <th><%= link_to "Category", request.params.merge(sort: 'category_id', direction: params[:direction] == 'asc' && params[:sort] == 'category_id' ? 'desc' : 'asc') %></th>
+            <th><%= link_to "Quantity", request.params.merge(sort: 'quantity', direction: params[:direction] == 'asc' && params[:sort] == 'quantity' ? 'desc' : 'asc') %></th>
+            <th><%= link_to "Price", request.params.merge(sort: 'current_price', direction: params[:direction] == 'asc' && params[:sort] == 'current_price' ? 'desc' : 'asc') %></th>
+            <th>Total Value</th>
+            <th>Status</th>
+        </tr>
+        </thead>
+      <tbody>
+        <% if @products.any? %>
+          <% @products.each do |product| %>
+            <tr>
+              <td><strong><%= product.name %></strong></td>
+              <td><%= product.category&.name || 'N/A' %></td>
+              <td><%= product.quantity %></td>
+              <td>$<%= number_with_precision(product.current_price, precision: 2) %></td>
+              <td>$<%= number_with_precision(product.quantity * product.current_price, precision: 2) %></td>
+              <td>
+                <span class="status-pill <%= product.quantity == 0 ? 'out' : (product.quantity < 10 ? 'low' : 'in') %>">
+                  <%= product.quantity == 0 ? 'Out of Stock' : (product.quantity < 10 ? 'Low Stock' : 'In Stock') %>
+                </span>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 40px; color: var(--muted-2);">
+              No products found
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+<% if @products.total_pages > 1 %>
+  <div class="pagination-container">
+    <%= paginate @products, 
+        param_name: :page,
+        window: 2,
+        outer_window: 1,
+        params: params.permit(:search, :category_id, :stock_filter, :per_page, :sort, :direction) %>
+  </div>
+<% end %>
+
+<script>
+  document.addEventListener('turbo:load', function() {
+    // =========================================
+    // CATEGORY CHART
+    // =========================================
+    const categoryCtx = document.getElementById('categoryChart')?.getContext('2d');
+    if (categoryCtx) {
+      new Chart(categoryCtx, {
+        type: 'bar',
+        data: {
+          labels: <%= raw @category_data[:labels].to_json %>,
+          datasets: [{
+            label: 'Products',
+            data: <%= raw @category_data[:data].to_json %>,
+            backgroundColor: 'rgba(179, 133, 74, 0.6)',
+            borderColor: '#b3854a',
+            borderWidth: 2,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1,
+                font: { family: 'Inter, sans-serif', size: 11 }
+              },
+              grid: { color: 'rgba(0,0,0,0.06)' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Inter, sans-serif', size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // =========================================
+    // STATUS CHART
+    // =========================================
+    const statusCtx = document.getElementById('statusChart')?.getContext('2d');
+    if (statusCtx) {
+      new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+          labels: <%= raw @stock_status_data[:labels].to_json %>,
+          datasets: [{
+            data: <%= raw @stock_status_data[:data].to_json %>,
+            backgroundColor: ['#5c7a52', '#d4a017', '#a5493a'],
+            borderWidth: 3,
+            borderColor: '#fdfbf6'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 16,
+                usePointStyle: true,
+                font: { family: 'Inter, sans-serif', size: 12 }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    // =========================================
+    // FILTERS
+    // =========================================
+    function applyFilters() {
+      const params = new URLSearchParams();
+      const search = document.getElementById('searchInput').value;
+      const category = document.getElementById('categoryFilter').value;
+      const stock = document.getElementById('stockFilter').value;
+      const perPage = document.getElementById('perPageSelect').value;
+
+      if (search) params.set('search', search);
+      if (category) params.set('category_id', category);
+      if (stock) params.set('stock_filter', stock);
+      if (perPage) params.set('per_page', perPage);
+      params.set('page', 1);
+
+      window.location.href = window.location.pathname + '?' + params.toString();
+    }
+
+    function clearFilters() {
+      window.location.href = window.location.pathname;
+    }
+
+    document.getElementById('applyFiltersBtn')?.addEventListener('click', applyFilters);
+    document.getElementById('clearFiltersBtn')?.addEventListener('click', clearFilters);
+    document.getElementById('categoryFilter')?.addEventListener('change', applyFilters);
+    document.getElementById('stockFilter')?.addEventListener('change', applyFilters);
+    document.getElementById('perPageSelect')?.addEventListener('change', applyFilters);
+
+    let timeout;
+    document.getElementById('searchInput')?.addEventListener('input', function() {
+      clearTimeout(timeout);
+      timeout = setTimeout(applyFilters, 500);
+    });
+
+    // =========================================
+    // SORTING
+    // =========================================
+    document.querySelectorAll('th a').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const url = new URL(this.href);
+        window.location.href = url.toString();
+      });
+    });
+  });
+</script>

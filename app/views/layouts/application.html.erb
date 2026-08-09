@@ -58,15 +58,26 @@
         </div>
         <nav class="nav-list">
           <% case current_role %>
-          <% when 'Admin' %>
-            <%= link_to admin_path, class: "nav-item #{'active' if request.path == admin_path}" do %>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-              <span class="nav-label">Dashboard</span>
-            <% end %>
-            <%= link_to admin_users_path, class: "nav-item #{'active' if request.path.include?('users')}" do %>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <span class="nav-label">Users</span>
-            <% end %>
+        <% when 'Admin' %>
+          <%= link_to admin_path, class: "nav-item #{'active' if request.path == admin_path}" do %>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+            <span class="nav-label">Dashboard</span>
+          <% end %>
+
+          <%= link_to admin_users_path, class: "nav-item #{'active' if request.path.include?('users')}" do %>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span class="nav-label">Users</span>
+          <% end %>
+
+          <%= link_to admin_orders_path, class: "nav-item #{'active' if request.path.include?('orders')}" do %>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span class="nav-label">Orders Report</span>
+          <% end %>
+
+          <%= link_to admin_stocks_path, class: "nav-item #{'active' if request.path.include?('stocks')}" do %>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+            <span class="nav-label">Stock Report</span>
+          <% end %>
 
           <% when 'StockManager' %>
             <%= link_to stock_manager_path, class: "nav-item #{'active' if request.path == stock_manager_path}" do %>
