@@ -15,7 +15,8 @@ Rails.application.routes.draw do
   get '/dashboard', to: 'dashboards#index'
 
   namespace :admin do
-    get '/', to: 'dashboard#index'
+    get '/', to: redirect('/admin/dashboard')
+    get '/dashboard', to: 'dashboard#index', as: 'dashboard'
     resources :users, only: [:index, :new, :create, :edit, :update, :destroy] do
       member do
         get 'edit/:role', to: 'users#edit', as: 'edit_by_role'
@@ -42,7 +43,8 @@ Rails.application.routes.draw do
   end
   
   namespace :stock_manager do
-    get '/', to: 'dashboard#index'
+    get '/', to: redirect('/stock_manager/dashboard')
+    get '/dashboard', to: 'dashboard#index', as: 'dashboard'
     resources :suppliers, only: [:index, :new, :create, :edit, :update, :destroy]
     resources :purchases, only: [:new, :create, :edit, :update, :destroy]  # No index
     resources :products, only: [:index, :new, :create, :edit, :update]
@@ -51,7 +53,8 @@ Rails.application.routes.draw do
  
   # Order Receiver namespace
   namespace :order_receiver do
-    get '/', to: 'dashboard#index'
+    get '/', to: redirect('/order_receiver/dashboard')
+    get '/dashboard', to: 'dashboard#index', as: 'dashboard'
     
     # Customer routes
     resources :customers, only: [:index, :new, :create, :edit, :update, :destroy]

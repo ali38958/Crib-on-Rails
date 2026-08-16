@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Crib on Rails</title>
+  <% default_page_name = controller_name.humanize.titleize %>
+  <title><%= content_for?(:title) ? "#{yield(:title)} - Crib on Rails" : "#{default_page_name} - Crib on Rails" %></title>
+  <link rel="icon" type="image/png" href="<%= asset_path('logo_circle.png') %>">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
@@ -24,7 +26,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <div class="logo-mark">
-          <%= image_tag "logo.png", alt: "Crib logo", class: "header-logo-image" %>
+          <%= image_tag "logo_circle.png", alt: "Crib logo", class: "header-logo-image" %>
         </div>
         <div class="logo-text">
           <span class="word">Crib</span>
@@ -59,7 +61,7 @@
         <nav class="nav-list">
           <% case current_role %>
         <% when 'Admin' %>
-          <%= link_to admin_path, class: "nav-item #{'active' if request.path == admin_path}" do %>
+          <%= link_to admin_dashboard_path, class: "nav-item #{'active' if request.path == admin_dashboard_path || request.path == '/admin'}" do %>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
             <span class="nav-label">Dashboard</span>
           <% end %>
@@ -80,7 +82,7 @@
           <% end %>
 
           <% when 'StockManager' %>
-            <%= link_to stock_manager_path, class: "nav-item #{'active' if request.path == stock_manager_path}" do %>
+            <%= link_to stock_manager_dashboard_path, class: "nav-item #{'active' if request.path == stock_manager_dashboard_path || request.path == '/stock_manager'}" do %>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
               <span class="nav-label">Dashboard</span>
             <% end %>
@@ -94,7 +96,7 @@
             <% end %>
 
           <% when 'OrderReceiver' %>
-            <%= link_to order_receiver_path, class: "nav-item #{'active' if request.path == order_receiver_path}" do %>
+            <%= link_to order_receiver_dashboard_path, class: "nav-item #{'active' if request.path == order_receiver_dashboard_path || request.path == '/order_receiver'}" do %>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
               <span class="nav-label">Dashboard</span>
             <% end %>

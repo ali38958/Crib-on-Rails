@@ -86,11 +86,11 @@ class ApplicationController < ActionController::Base
   def role_specific_path(role)
     case role
     when 'Admin'
-      admin_path
+      admin_dashboard_path
     when 'StockManager'
-      stock_manager_path
+      stock_manager_dashboard_path
     when 'OrderReceiver'
-      order_receiver_path
+      order_receiver_dashboard_path
     else
       login_path
     end

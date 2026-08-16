@@ -37,6 +37,27 @@
   </div>
 </div>
 
+<div class="charts-grid">
+  <div class="chart-card">
+    <div class="chart-card-head">
+      <h3>Revenue (Last 7 Days)</h3>
+      <p>Total sales volume over the past week</p>
+    </div>
+    <div class="chart-container">
+      <canvas id="revenueChart"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-head">
+      <h3>Orders Volume</h3>
+      <p>Number of orders placed daily</p>
+    </div>
+    <div class="chart-container">
+      <canvas id="ordersChart"></canvas>
+    </div>
+  </div>
+</div>
+
 <div class="panel-card">
   <div class="panel-card-head">
     <h3>Recent Orders</h3>
@@ -65,3 +86,111 @@
     </tbody>
   </table>
 </div>
+
+<script>
+  document.addEventListener('turbo:load', function() {
+    const revenueCtx = document.getElementById('revenueChart');
+    const ordersCtx = document.getElementById('ordersChart');
+    
+    if (!revenueCtx || !ordersCtx) return;
+
+    const labels = <%= raw @revenue_data.keys.to_json %>;
+    const revenueData = <%= raw @revenue_data.values.to_json %>;
+    const ordersData = <%= raw @orders_data.values.to_json %>;
+
+    // Destroy existing instances if navigating via Turbo
+    if (window.revenueChartInstance) window.revenueChartInstance.destroy();
+    if (window.ordersChartInstance) window.ordersChartInstance.destroy();
+
+    window.revenueChartInstance = new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Revenue ($)',
+          data: revenueData,
+          borderColor: '#C79A56', // var(--brass-dim) equivalent
+          backgroundColor: 'rgba(199, 154, 86, 0.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: '#C79A56',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: '#C79A56'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0F172A', // var(--ink) equivalent
+            titleFont: { family: "'Space Mono', monospace", size: 12 },
+            bodyFont: { family: "'Space Mono', monospace", size: 13 },
+            padding: 12,
+            cornerRadius: 4,
+            displayColors: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0, 0, 0, 0.04)', drawBorder: false },
+            ticks: { font: { family: "'Space Mono', monospace", size: 10 }, color: '#94A3B8' }
+          },
+          x: {
+            grid: { display: false, drawBorder: false },
+            ticks: { font: { family: "'Space Mono', monospace", size: 10 }, color: '#94A3B8' }
+          }
+        }
+      }
+    });
+
+    window.ordersChartInstance = new Chart(ordersCtx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Orders',
+          data: ordersData,
+          backgroundColor: '#0F172A', // var(--ink) equivalent
+          borderRadius: 4,
+          barThickness: 'flex',
+          maxBarThickness: 40
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0F172A',
+            titleFont: { family: "'Space Mono', monospace", size: 12 },
+            bodyFont: { family: "'Space Mono', monospace", size: 13 },
+            padding: 12,
+            cornerRadius: 4,
+            displayColors: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0, 0, 0, 0.04)', drawBorder: false },
+            ticks: { 
+              font: { family: "'Space Mono', monospace", size: 10 }, 
+              color: '#94A3B8',
+              stepSize: 1
+            }
+          },
+          x: {
+            grid: { display: false, drawBorder: false },
+            ticks: { font: { family: "'Space Mono', monospace", size: 10 }, color: '#94A3B8' }
+          }
+        }
+      }
+    });
+  });
+</script>
