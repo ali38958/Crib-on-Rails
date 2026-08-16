@@ -16,7 +16,7 @@
   <%= yield :head %>
 </head>
 <body>
-  <% if cookies[:auth_token] && controller_name != 'login' %>
+  <% if logged_in? && controller_name != 'login' %>
     <!-- Logged in - show header + sidebar -->
     <header class="header">
       <div class="header-left">

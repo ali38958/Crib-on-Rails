@@ -28,9 +28,13 @@ class RefreshController < ApplicationController
         
         render json: { success: true, message: 'Token refreshed' }
       else
+        cookies.delete(:auth_token)
+        cookies.delete(:refresh_token)
         render json: { error: 'User not found' }, status: :unauthorized
       end
     else
+      cookies.delete(:auth_token)
+      cookies.delete(:refresh_token)
       render json: { error: 'Invalid refresh token' }, status: :unauthorized
     end
   end

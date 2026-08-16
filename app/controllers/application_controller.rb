@@ -28,7 +28,16 @@ class ApplicationController < ActionController::Base
   
   def authenticate_request
     unless logged_in?
-      redirect_to login_path, alert: 'Please login first'
+      is_fetch = request.format.json? || 
+                 request.headers['Sec-Fetch-Dest'] == 'empty' || 
+                 request.xhr? || 
+                 (request.headers['Accept'] && request.headers['Accept'].match?(/turbo/i))
+
+      if is_fetch
+        render json: { error: 'Unauthorized' }, status: :unauthorized
+      else
+        redirect_to login_path, alert: 'Please login first'
+      end
     end
   end
   
