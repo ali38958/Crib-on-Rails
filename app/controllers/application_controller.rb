@@ -6,10 +6,36 @@ class ApplicationController < ActionController::Base
   helper_method :current_user, :logged_in?, :current_role
   
   def current_user
-    return nil unless cookies[:auth_token]
-    decoded = decode_token(cookies[:auth_token], ENV['SECRET_KEY_BASE'])
-    return nil unless decoded && decoded['type'] == 'auth'
-    @current_user ||= decoded['role'].constantize.find(decoded['user_id'])
+    return @current_user if defined?(@current_user)
+
+    if cookies[:auth_token]
+      decoded = decode_token(cookies[:auth_token], ENV['SECRET_KEY_BASE'])
+      if decoded && decoded['type'] == 'auth'
+        @current_user = decoded['role'].constantize.find_by(id: decoded['user_id']) rescue nil
+        return @current_user if @current_user
+      end
+    end
+
+    if cookies[:refresh_token]
+      decoded_refresh = decode_token(cookies[:refresh_token], ENV['REFRESH_KEY_BASE'])
+      if decoded_refresh && decoded_refresh['type'] == 'refresh'
+        user = Admin.find_by(id: decoded_refresh['user_id']) ||
+               StockManager.find_by(id: decoded_refresh['user_id']) ||
+               OrderReceiver.find_by(id: decoded_refresh['user_id'])
+        if user
+          new_auth_token = generate_auth_token(user)
+          cookies[:auth_token] = {
+            value: new_auth_token,
+            httponly: true,
+            expires: ENV['AUTH_TOKEN_LIFE'].to_i.seconds.from_now
+          }
+          @current_user = user
+          return @current_user
+        end
+      end
+    end
+
+    nil
   rescue
     nil
   end
@@ -19,11 +45,7 @@ class ApplicationController < ActionController::Base
   end
   
   def current_role
-    return nil unless cookies[:auth_token]
-    decoded = decode_token(cookies[:auth_token], ENV['SECRET_KEY_BASE'])
-    decoded['role'] if decoded
-  rescue
-    nil
+    current_user&.class&.name
   end
   
   def authenticate_request
