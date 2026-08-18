@@ -8,7 +8,7 @@
 /.bundle
 
 # Ignore all environment files.
-/.env*
+.env*
 
 # Ignore AI agents and skills (Prevent leaking system prompts)
 /.agents/
