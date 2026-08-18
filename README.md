@@ -1,78 +1,103 @@
-# Inventory Management System
+<div align="center">
+  <img src="app/assets/images/logo_circle.png" alt="Crib on Rails Logo" width="120" />
 
-A role-based inventory management system built with Ruby on Rails. Currently under development as a personal project.
+  # Crib on Rails
+  
+  **A role-based inventory management system built with Ruby on Rails.**
 
-## 🚧 Status
+</div>
 
-Under active development - personal learning project.
+## 📖 Overview
 
-## 👥 Roles
+Crib on Rails is a comprehensive inventory management system currently under active development. It provides a robust, role-based architecture to streamline stock management, order processing, and administrative controls.
 
-- **Admin** - Full system control
-- **Stock Manager** - Manage inventory and stock
-- **Order Receiver** - Process incoming orders
+**Login Page**
+<div align="center">
+  <img src="screenshots/login.jpeg" alt="Crib on Rails Login" width="800" />
+</div>
+
+**Dashboard**
+<div align="center">
+  <img src="screenshots/lorder_receiver_dashboard.png" alt="Order Receiver Dashboard" width="800" />
+</div>
+
+## ✨ Key Features
+
+- **Role-Based Access Control**: Tailored dashboards and permissions for different user roles.
+  - 🛡️ **Admin**: Full system control and reporting.
+  - 📦 **Stock Manager**: Comprehensive inventory and stock level management.
+  - 📝 **Order Receiver**: Streamlined processing of incoming orders.
+- **Product Management**: Complete CRUD operations for inventory items.
+- **Stock Tracking**: Real-time monitoring of stock levels.
+- **Order Processing**: Efficient workflow for receiving and managing orders.
 
 ## 🛠️ Tech Stack
 
-- Ruby on Rails
-- SQLite3
-- HTML / CSS / Vanilla JS
+- **Framework**: Ruby on Rails
+- **Database**: SQLite3
+- **Frontend**: HTML, CSS, Vanilla JS
 
-## ✨ Planned Features
+## 🚀 Getting Started
 
-- Authentication & authorization
-- Product management (CRUD)
-- Stock level tracking
-- Order processing
-- Supplier management
-- Inventory reports
+Follow these steps to set up the project locally.
 
-## 🚀 Setup
+### Prerequisites
 
-<<<<<<< HEAD
-```bash
-bundle install
-rails db:create db:migrate db:seed
-rails server
-```
+- Ruby
+- Bundler
+- Rails
 
-Visit `http://localhost:3000`
+### Installation
 
-## 📁 Structure
+1. **Clone the repository** (or navigate to the project directory)
+   ```bash
+   git clone https://github.com/ali38958/Crib-on-Rails.git
+   cd Crib-on-Rails
+   ```
 
-```
-=======
-bundle install
-rails db:create db:migrate db:seed
-rails server
-Visit http://localhost:3000
+2. **Install dependencies**
+   ```bash
+   bundle install
+   ```
 
-📁 Structure
-text
->>>>>>> 326510aaeab2264f020a9e27801a433341abf32f
+3. **Set up the database**
+   ```bash
+   rails db:create db:migrate db:seed
+   ```
+
+4. **Start the server**
+   ```bash
+   rails server
+   ```
+
+5. **Access the application**
+   Open your browser and navigate to `http://localhost:3000`
+
+## 📁 Project Structure
+
+```text
 app/
-├── controllers/
-├── models/
-├── views/
-└── ...
-<<<<<<< HEAD
+├── controllers/    # Request handling and business logic routing
+├── models/         # Data models and database interactions
+├── views/          # HTML templates and UI components
+└── assets/         # Static assets like images, CSS, and JS
 ```
 
-## 📌 Progress
+## 📌 Development Roadmap
 
-- [ ] Authentication
-- [ ] Role-based access
-- [ ] Product CRUD
-- [ ] Stock management
-- [ ] Order processing
-- [ ] Reporting
+- [x] Initial project setup
+- [ ] Authentication & secure password recovery
+- [ ] Role-based access implementation
+- [ ] Product CRUD operations
+- [ ] Stock management workflow
+- [ ] Order processing features
+- [ ] Advanced reporting & analytics
 
 ## 📄 License
 
-MIT
+This project is licensed under the MIT License.
 
 ## 👤 Author
 
-Muhammad Ali
-[\[GitHub Link\]](https://github.com/ali38958/Crib-on-Rails)
-=======
+**Muhammad Ali**  
+[GitHub Profile](https://github.com/ali38958) | [Project Repository](https://github.com/ali38958/Crib-on-Rails)

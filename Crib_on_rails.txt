@@ -1,0 +1,56 @@
+# Crib on Rails - Application Overview
+
+## Introduction
+"Crib on Rails" is a role-based inventory and order management system built using Ruby on Rails. It is designed to handle products, stock levels, suppliers, and customer orders while providing distinct dashboards and permissions based on user roles.
+
+## Tech Stack
+- **Backend:** Ruby on Rails (v8.1)
+- **Database:** SQLite3
+- **Frontend:** HTML, CSS, Vanilla JavaScript
+- **File Storage:** Active Storage (for product images)
+- **Authentication:** Custom session management, JWT Token Refresh, and OTP-based password resets via Gmail SMTP.
+
+## User Roles & Namespaces
+
+The system is strictly divided into three primary roles, each with its own dashboard and namespace:
+
+1. **Admin (`/admin`)**
+   - Full system control.
+   - Manages all user accounts (Admins, Stock Managers, Order Receivers).
+   - Views overall orders and stock levels.
+   - Can export data to CSV or PDF (client-side generation).
+   - Views interactive Chart.js visualizations for Revenue and Orders.
+
+2. **Stock Manager (`/stock_manager`)**
+   - Focuses on inventory and product management.
+   - Manages Suppliers and Purchases.
+   - Manages Products (CRUD operations, image uploads via drag-and-drop, price tracking) and Categories.
+   - Lists inventory with Kaminari pagination and server-side search/filtering.
+
+3. **Order Receiver (`/order_receiver`)**
+   - Focuses on customer-facing operations.
+   - Manages Customers.
+   - Creates and manages Orders and Order Items.
+   - Tracks order statuses (Launch, Process, Cancel) and payments (Price Paid vs Total Price).
+   - View-only access to products.
+
+## Core Database Models
+- **Users:** `Admin`, `StockManager`, `OrderReceiver` (Each stored in separate tables with `password_digest` and role-specific attributes, using custom string IDs).
+- **Authentication:** `PasswordReset` (OTP-based password recovery).
+- **Inventory:** `Category`, `Product` (Tracks current_price, quantity, image_url, etc.), `Supplier`, `Purchase` (Tracks incoming stock from suppliers), `PriceChange` (Tracks history of product price changes).
+- **Orders:** `Customer`, `Order` (Tracks total_price, price_paid, status, customer_id, created_by_id, updated_by_id), `OrderItem` (Tracks quantity and price_per_unit), `StatusChange` (Logs history of order status transitions).
+
+## Key Features & Implementations
+- **Role-Based Dashboards:** Distinct routes, controllers, and views for each role.
+- **Product Management:** Server-side search, filtering, and Kaminari pagination (capable of handling 700k+ records). Drag-and-drop image uploads.
+- **Order Lifecycle:** Orders transition through various statuses, with every transition logged in `StatusChange`. Track partial or full payments.
+- **Password Recovery:** Secure OTP-based reset mechanism with transactional emails.
+- **Data Export:** Reports can be exported as CSV or generated as PDF using clean client-side print implementations.
+- **Dynamic UI:** Extensive use of Chart.js for data visualization and Vanilla JS for interactive modals and dynamic event listeners without relying heavily on complex front-end frameworks.
+
+## Routing Structure
+- `/login`, `/logout`, `/refresh` (Session/JWT control)
+- `/forgot_password`, `/password_resets/*` (OTP Flow)
+- `/admin/*`
+- `/stock_manager/*`
+- `/order_receiver/*`
