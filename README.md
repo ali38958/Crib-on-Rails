@@ -96,12 +96,12 @@ app/
 ## 📌 Development Roadmap
 
 - [x] Initial project setup
-- [ ] Authentication & secure password recovery
-- [ ] Role-based access implementation
-- [ ] Product CRUD operations
-- [ ] Stock management workflow
-- [ ] Order processing features
-- [ ] Advanced reporting & analytics
+- [x] Authentication & secure password recovery
+- [x] Role-based access implementation
+- [x] Product CRUD operations
+- [x] Stock management workflow
+- [x] Order processing features
+- [x] Advanced reporting & analytics
 
 ## 📄 License
 
