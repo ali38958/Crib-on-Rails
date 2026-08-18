@@ -65,12 +65,22 @@ Follow these steps to set up the project locally.
    rails db:create db:migrate db:seed
    ```
 
-4. **Start the server**
+4. **Create an initial Admin account**
+   ```bash
+   rails runner "Admin.create!(id: 'admin1', name: 'Admin', email: 'admin@example.com', password: 'password', password_confirmation: 'password')"
+   ```
+   *Note: With this account, you can now log in as an Admin and create different users.*
+
+5. **Configure Environment Variables & Customer Signup**
+   - Open the `.env` file and replace the Gmail app credentials with your own.
+   - You can also sign up as a Customer directly from the application.
+
+6. **Start the server**
    ```bash
    rails server
    ```
 
-5. **Access the application**
+7. **Access the application**
    Open your browser and navigate to `http://localhost:3000`
 
 ## 📁 Project Structure
