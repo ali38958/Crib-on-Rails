@@ -9,7 +9,7 @@
   [![Ruby](https://img.shields.io/badge/Ruby-3.x-CC342D?style=flat-square&logo=ruby&logoColor=white)](https://www.ruby-lang.org/)
   [![Database](https://img.shields.io/badge/Database-SQLite3-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
   [![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20Cross--Platform-0078D6?style=flat-square&logo=googlechrome&logoColor=white)](https://github.com/ali38958/Crib-on-Rails)
-  [![License: Personal Use Only](https://img.shields.io/badge/License-Personal%20Use%20Only-orange.svg?style=flat-square)](#-license)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](#-license)
   [![Author: Muhammad Ali](https://img.shields.io/badge/Author-Muhammad%20Ali-blue?style=flat-square)](https://github.com/ali38958)
 
   [✨ Features](#-why-crib-on-rails) • [📸 Visual Showcase](#-visual-showcase) • [🏗️ Architecture](#-system-architecture) • [👥 Role Workflows](#-role-based-workflows) • [⚡ Quick Start](#-getting-started) • [📄 License](#-license)
@@ -210,9 +210,7 @@ Crib_on_Rails/
 
 ## 📄 License
 
-This project is released under a **Personal, Non-Commercial Use Agreement**. Unauthorized redistribution, public mirroring, re-uploading binaries or source code, commercial SaaS hosting, or claiming ownership is strictly prohibited.
-
-For complete details, please see the [LICENSE.md](LICENSE.md) file.
+This project is open-source and available under the terms of the [MIT License](LICENSE.md).
 
 ---
 
