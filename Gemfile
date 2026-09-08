@@ -16,7 +16,7 @@ gem 'jwt'
 gem 'dotenv-rails'
 gem 'csv'
 
-gem 'dartsass-rails'
+
 gem 'kaminari', github: 'kaminari/kaminari'
 
 gem "tzinfo-data", platforms: %i[ windows jruby ]
