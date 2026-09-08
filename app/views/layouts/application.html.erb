@@ -3,7 +3,7 @@
 <head>
   <% default_page_name = controller_name.humanize.titleize %>
   <title><%= content_for?(:title) ? "#{yield(:title)} - Crib on Rails" : "#{default_page_name} - Crib on Rails" %></title>
-  <link rel="icon" type="image/png" href="<%= asset_path('logo_circle.png') %>">
+  <%= favicon_link_tag 'logo_circle.png', rel: 'icon', type: 'image/png', href: "#{asset_path('logo_circle.png')}?v=2" %>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
